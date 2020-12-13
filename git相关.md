@@ -109,3 +109,9 @@ git merge <被合并分支名>：合并分支
 - git merge <远程库别名/远程库分支名>：将抓取下来的远程的分支，跟当前所在分支进行合并
 
 - git fork：复制远程库
+
+  git 设置提交人信息
+
+- git config --global user.name "myname" 
+
+- git config --global user.email "myname@qq.com"

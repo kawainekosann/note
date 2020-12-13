@@ -1,5 +1,22 @@
-#  Git常用命令
+# Git常用命令
 [toc]
+
+## 个人操作
+1. 首先新建一个文件夹，定位到该文件夹，git init
+2. 设置提交者的信息  
+    - git config --global user.name "myname" 
+    - git config --global user.email "myname@qq.com"
+3. 将要上传的文件放入文件夹，git add将文件加入到暂存区
+4. git commit -m "message" 写提交信息，提交到本地
+5. git remote -v：查看远程库地址别名  
+git remote add <别名> <远程库地址>：新建远程库地址别名  
+    git remote add note https://github.com/kawainekosann/note.git
+6. 第一次提交要创建master分支  
+git push --set-upstream note master  
+否则git push note
+
+
+
 ## 本地操作
 ### 1. 其它
 

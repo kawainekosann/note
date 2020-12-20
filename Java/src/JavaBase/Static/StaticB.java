@@ -1,6 +1,6 @@
-package Static;
+package JavaBase.Static;
 
-import java.awt.*;
+import JavaBase.Test.Test;
 
 public class StaticB {
     public static int i = 7;

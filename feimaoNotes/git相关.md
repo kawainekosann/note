@@ -3,17 +3,23 @@
 
 ## 个人操作
 1. 首先新建一个文件夹，定位到该文件夹，git init
+
 2. 设置提交者的信息  
     - git config --global user.name "myname" 
     - git config --global user.email "myname@qq.com"
+    
 3. 将要上传的文件放入文件夹，git add将文件加入到暂存区
+
 4. git commit -m "message" 写提交信息，提交到本地
+
 5. git remote -v：查看远程库地址别名  
 git remote add <别名> <远程库地址>：新建远程库地址别名  
-    git remote add note https://github.com/kawainekosann/note.git
+git remote add note https://github.com/kawainekosann/note.git  
+git remote rm origin：删除git远程库
+
 6. 第一次提交要创建master分支  
-git push --set-upstream note master  
-否则git push note
+    git push --set-upstream note master  
+  否则git push note
 
 
 
@@ -64,6 +70,22 @@ git reset --hard HEAD~1：后退一个版本
 
 　　tip：波浪线~后面的数字表示后退几个版本
 
+git push -f：强制推送
+
+git reset 版本号：恢复到。。  hard会强制删除之后的修改  mix会回到提交前的状态
+
+git revert： 取消这次提交
+
+git rebase 合并提交    
+pick 的意思是要会执行这个 commit
+squash 的意思是这个 commit 会被合并到前一个commit
+或者git rebase -i HEAD~3 命令合并3个 control加功能健执行 会保存一个文件
+
+git stash save "save message" : 将当前修改执行存储，添加备注，方便查找，只有git stash 也要可以的，但查找时不方便识别。
+
+git stash pop ：命令恢复之前缓存的工作目录，将缓存堆栈中的对应stash删除，并将对应修改应用到当前的工作目录下,默认为第一个stash,即stash@{0}，如果要应用并删除其他stash，命令：git stash pop stash@{$num} ，比如应用并删除第二个：git stash pop stash@{1}
+
+cherry_Pick可以将另一个分支的某次提交的代码合并到现在的分支中
  
 
 ### 4. 比较差异

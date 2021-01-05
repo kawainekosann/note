@@ -1,0 +1,108 @@
+sudo apt-get install open-vm-tools open-vm-tools-desktop open-vm-tools-dkms
+
+
+-javaAgent:RubyMine-2018.1.2/bin/JetbrainsCrack.jar (这里改成全路径)
+
+export JAVA_HOME=/usr/local/jdk/jdk1.8.0_202
+export CLASSPATH=$:CLASSPATH:$JAVA_HOME/lib/ 
+export PATH=$PATH:$JAVA_HOME/bin
+
+sudo update-alternatives --install /usr/bin/java java /usr/local/jdk/jdk1.8.0_202/bin/java 300
+sudo update-alternatives --install /usr/bin/javac javac /usr/local/jdk/jdk1.8.0_202/bin/javac 300
+sudo update-alternatives --config java
+
+
+RISMON_YX_URL: https://wreport.riskmonster.com/report/apply/decrypt.rtml?encryptStr=
+
+sudo dpkg --get-selections | grep linux
+sudo apt-mark hold linux-image-generic-hwe-16.04  linux-headers-4.15.0-45-generic	
+
+按住shift进入引导界面，按 e 键；
+找到 splash，按空格，加上nomodeset，按Ctrl+X启动即可。
+
+sudo apt-get remove --purge linux-image-4.15.0-45-generic linux-image-4.15.0-45-Ceneric
+apt install linux-image-generic-hwe-16.04 linux-headers-4.15.0-45-generic
+
+apt-get install open-vm-*
+正确的是：
+使用命令： sudo mount -t fuse.vmhgfs-fuse .host:/VM_Shared  /mnt/hgfs -o allow_other（如果卸载，就把mount -t换成umount -a）
+或sudo vmhgfs-fuse .host:/VM_Shared /mnt/hgfs
+ （其中.host:/Documents是共享名，只需把Documents换成使用vmware-hgfsclient 命令得到的目录，/mnt/hgfs是挂载点。）
+
+如果每次重启之后想让系统自动挂载 #vi /etc/fstab:
+在最后添加一行：
+.host:/VM_Shared /mnt/hgfs fuse.vmhgfs-fuse allow_other 0 0
+
+
+sudo service mongod start
+sudo service mongod status
+sudo service mongod stop
+sudo service mongod restart
+
+cd /root
+ls -al ~/.ssh
+rm -rf .ssh
+ssh-keygen -t rsa -C "sxd4business@qq.com"
+
+
+sudo gedit
+StrictHostKeyChecking no
+UserKnownHostsFile /dev/null
+
+git config --global user.email "1532921016@qq.com"
+git config --global user.name "LIU"
+
+git remote rm origin
+git remote add origin ssh://admin@172.29.2.228:29418/test.git
+git push -u origin master
+
+git clone ssh://admin@172.29.2.104:29418/shirasagi.git
+git clone -b workflow_dev_brantch ssh://admin@172.29.2.104:29418/shirasagi.git
+git remote set-url origin ssh://admin@172.29.2.104:29418/shirasagi.git
+
+
+cherry_Pick可以将另一个分支的某次提交的代码合并到现在的分支中
+git push -f
+git reset 恢复到。。  hard会强制删除之后的修改  mix会回到提交前的状态
+git revert 取消这次提交
+git rebase 合并提交    
+pick 的意思是要会执行这个 commit
+squash 的意思是这个 commit 会被合并到前一个commit
+或者git rebase -i HEAD~3 命令合并3个 control加功能健执行 会保存一个文件
+
+
+rake secret RAILS_ENV=production 产生一个秘钥
+在目录 /etc/profile.d/xxx.sh, 下面新建一个 st_rails_secret_key_env.sh 脚本, 内容: export SECRET_KEY_BASE='你前面产生的那个秘钥'
+
+rake gws:set_admin_role user=admin site=シラサギ市
+rake gws:set_admin_role site=ceshi user=admin
+
+
+当主机使用ssh免密码登录时，弹出Warning:Permanently added (RSA) to the list of known hosts的警告，看着很碍眼。通过以下方法进行解决：
+1：vim  /etc/ssh/ssh_config（master和slave1都需要设置）
+找到#StrictHostKeyChecking ask去掉注释，并把ask改为no即可
+
+bundle exec rspec
+
+
+git stash  
+git pull origin master  
+git stash pop 
+
+换样式时使用命令
+bundle exec rake assets:precompile
+
+rsync -avPz --progress /home/liu/下载/textmove    root@172.29.1.76:/var/www/textmove
+rsync -avPz --delete  --progress /home/liu/下载/textmove    root@172.29.1.76:/var/www/textmove
+
+
+beyongcompare4
+First patch your 4.1 Linux binary, using: "sudo sed -i "s/keexjEP3t4Mue23hrnuPtY4TdcsqNiJL-5174TsUdLmJSIXKfG2NGPwBL6vnRPddT7tH29qpkneX63DO9ECSPE9rzY1zhThHERg8lHM9IBFT+rVuiY823aQJuqzxCKIE1bcDqM4wgW01FH6oCBP1G4ub01xmb4BGSUG6ZrjxWHJyNLyIlGvOhoY2HAYzEtzYGwxFZn2JZ66o4RONkXjX0DF9EzsdUef3UAS+JQ+fCYReLawdjEe6tXCv88GKaaPKWxCeaUL9PejICQgRQOLGOZtZQkLgAelrOtehxz5ANOOqCaJgy2mJLQVLM5SJ9Dli909c5ybvEhVmIC0dc9dWH+/N9KmiLVlKMU7RJqnE+WXEEPI1SgglmfmLc1yVH7dqBb9ehOoKG9UE+HAE1YvH1XX2XVGeEqYUY-Tsk7YBTz0WpSpoYyPgx6Iki5KLtQ5G-aKP9eysnkuOAkrvHU8bLbGtZteGwJarev03PhfCioJL4OSqsmQGEvDbHFEbNl1qJtdwEriR+VNZts9vNNLk7UGfeNwIiqpxjk4Mn09nmSd8FhM4ifvcaIbNCRoMPGl6KU12iseSe+w+1kFsLhX+OhQM8WXcWV10cGqBzQE9OqOLUcg9n0krrR3KrohstS9smTwEx9olyLYppvC0p5i7dAx2deWvM1ZxKNs0BvcXGukR+/g" BCompare"; 
+
+ --- BEGIN LICENSE KEY --- ayvZeJDYPBHS4J-1K6g6bDBuPoo0G-oGAq35blZtAoRqC-qQeSz28XAzX6nTx9laTMLRCp6nAIhHNGZ2ehkeUfbnFaxEeLvI8fJavn-XQLNbOumCLUqgdNbNMZiFRU03+OTQnw4V-E2YKTYi-LkgPzE6R-yIJGDNWfxH2AdpIgg8rlpsbrTs9Dt1zysUfvAEi0dKbmGIi3rqf7yWmwDh1AI5VyoWFIejvJwJLmlr2CjQ1VZ3DySCfBDuKcYmOCeK7jzEWPUnAw+f9360nIiiNEB0YGkwBkdtgaKEEik7aNiI3jXvp5r34wViVJCiX7m2y7pqBV9gZIvP9hP9KPnP++++ --- END LICENSE KEY -----
+
+
+.all.entries
+
+
+npm run dev

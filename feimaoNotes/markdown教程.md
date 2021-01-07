@@ -89,8 +89,9 @@
 />> 菜鸟教程  
 />>> 学的不仅是技术更是梦想  
 > 区块引用  
->> 菜鸟教程  
->>> 学的不仅是技术更是梦想  
+> > 菜鸟教程  
+> >
+> > > 学的不仅是技术更是梦想  
 
 ### 区块中使用列表
 > 区块中使用列表
@@ -109,8 +110,9 @@
 ### 列表中使用区块  
 * 第一项  
 >第一项的区块
+>
 >>第一项区块的子区块  
-    
+
 * 第二项   
   
 ## MarkDown代码  
@@ -151,8 +153,8 @@ $(document).ready(function () {
 这个链接用 runoob 作为网址变量   [Runoob][runoob]  
 然后在文档的结尾为变量赋值（网址） 
 
-[1]: http://www.google.com/  
-[runoob]: http://www.runoob.com/  
+[1]: http://www.google.com/
+[runoob]: http://www.runoob.com/
 
 ## MarkDown 图片  
 + 开头一个感叹号 !  
@@ -166,7 +168,7 @@ $(document).ready(function () {
 这个链接用 1 作为网址变量 [RUNOOB][1].
 然后在文档的结尾为变量赋值（网址）
 
-[1]: http://static.runoob.com/images/runoob-logo.png  
+[1]: http://static.runoob.com/images/runoob-logo.png
 **Markdown 还没有办法指定图片的高度与宽度，如果你需要的话，你可以使用普通的 <img> 标签。**   
 ==暂时有问题==
 <img src="http://static.runoob.com/images/runoob-logo.png" width="200px" /> 
@@ -198,6 +200,18 @@ $(document).ready(function () {
 
 
 
+## Markdown目录和下拉目录
 
+**直接生成目录就用 \[toc\]**
+
+**生成下拉目录：**
+1.首先安装马克飞象（首先安装node.js）
+2.第二步安装 npm install -g i5ting_toc
+3.进入 md 文件所在的文件夹后, 输入命令:
+```
+ i5ting_toc -f sample.md -o
+```
+sample.md是你的文件名
+此时你的桌面上就会出现一个`preview`的文件夹
 
 

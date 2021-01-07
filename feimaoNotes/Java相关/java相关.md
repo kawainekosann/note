@@ -254,6 +254,87 @@ public class Chinese extends Person {
 
 
 
+## final关键字
+
+根据上下文环境，final关键字存在细微的差别，但通常它指“无法改变”。以下谈论final关键字使用的三种情况：数据，方法，类
+
+* final数据
+
+  在编译代码的过程中，向编译器告知一块数据是恒定不变的，比如：
+  1. 一个永不改变的编译常量。
+  2. 一个在运行时被初始化的值，你希望他不会发生改变。    
+
+对于（1）编译常量，在Java中这种编译常量必须是基本数据类型，并以final关键字修饰，在对这个常量进行定义时，必须对其赋值。 
+而对于对象引用时，final关键字则是使引用恒定不变，一旦引用被初始化指向一个对象，就无法将它改为指向另一个对象。然而对象本身却是可以修改的。
+
+```java
+package JavaBase.Final;
+import java.util.Random;
+class Final {
+    int i;
+
+    public Final(int l) {
+        this.i = l;
+    }
+}
+
+public class Father {
+    private static Random rand = new Random(47);
+    private String id;
+    public Father(String id) {
+        this.id = id;
+    }
+    private final int valueone = 9;
+    private static final int VAL_TWO = 99;
+    public static final int VAL_THREE = 39;
+    private final int i4 = rand.nextInt(20);
+    static final int INT_5 = rand.nextInt(20);
+    private Final v1 = new Final(11);
+    private final Final v2 = new Final(22);
+    private static final Final VAL_3 = new Final(33);
+    private final int[] a = {1, 2, 3, 4, 5, 6};
+    public String toString() {
+        return id + ": " + "i4 = " + i4 + "INT_5 = " + INT_5;
+    }
+
+    public static void main(String[] args) {
+        Father fd1 = new Father("fd1");
+        fd1.v2.i++;
+        fd1.v1 =new Final(9);
+        for(int i = 0;i<fd1.a.length;i++){
+            fd1.a[i]++;
+            //fd1.v2 = new Final(0);
+            //fd1.VAL_3 = new Final(1);
+            //fd1.a = new int[3];
+        }
+        System.out.println(fd1);
+        System.out.println("Creating new Father");
+        Father fd2 = new Father("fd2");
+        System.out.println(fd1);
+        System.out.println(fd2);
+
+    }
+}
+//fd1: i4 = 15，INT_5 = 18
+//Creating new Father
+//fd1: i4 = 15，INT_5 = 18
+//fd2: i4 = 13，INT_5 = 18
+```
+
+由于`valueone`和`VAL_TWO`都是带有编译时数值的final基本类型。所以他俩都是编译期常量，并没有太大区别。`VALUE_THREE`是一种典型的对常量的一种定义方式：<font color ='red'>1.定义为public，则可以用于包外。2.定义为static，强调只有一份（只会加载一次）。3.定义为final，则说明它是一个常量。</font>注意，带有恒定初始值的final static 基本类型全用大写字母命名，字与字之间以_(下划线)隔开。
+
+我们不能因为某数是final修饰的就认为在编译时就可以知道它的值，用随机数生成的`i4`,`INT_5`说明了这一点。
+
+`fd1`,`fd2`中`i4`的值是唯一的，但`INT_5`的值是static静态的，在装载时已经初始化，每创建对象时并不会再一次初始化。故其不会改变。
+
+`v1`到`VAL_3`说明了final修饰引用的情况：不能因为`v2`是final的就认为无法改变它的值，它是一个引用，final表示无法将`v2`指向一个新的引用。这对数组同理。（数组只不过是另一种引用）。
+
+
+
+
+
+
+
 ## 赋值
 
 赋值的时候，是直接将一个地方的内容复制到另一个地方，例如对基本类型使用 a=b； 那么就是将b的值复制给a；若接着修改a，b不会收到这种修改的影响。  
@@ -580,6 +661,56 @@ class Parrot extends Bird{
 ```
 
 **通过代码可以观察到，执行的顺序是父类静态代码块>子类静态代码块>父类代码块>父类代码块>父类构造器>子类代码块>子类构造器**
+
+
+
+#### **向上转型**
+
+例：
+
+```java
+package JavaBase.Extends;
+public class Father {
+    public void play(){};
+    static void tune(Father fa){
+        fa.play();
+    }
+}
+package JavaBase.Extends;
+
+public class Child extends Father{
+    public static void main(String[] args) {
+        Child child = new Child();
+      //父类的方法传入子类的对象不报错
+        Father.tune(child);
+    }
+}
+
+```
+由上面的例子可以看出Father类的tune方法可以接受Child类的引用，这说明了Child的对象同时也是一种特殊的Father对象，并且不存在tune方法可以通过Father调用却不能通过Child来调用，在tune方法中，程序方法可以对Father类及其所有的子类起作用，这种将子类的引用转换成父类的引用的动作，称为**向上转型**  
+
+Father
+   ↑
+Child
+
+由导出类（Child）转换成Father类，在继承图上是向上移动的，所以一般称为**向上转型**，向上转型是一种专用类型向通用类型的转换，所以总是很安全的。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

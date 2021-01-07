@@ -1,4 +1,4 @@
-package 赋值;
+package JavaBase.赋值;
 
 class Letter {
     int c;

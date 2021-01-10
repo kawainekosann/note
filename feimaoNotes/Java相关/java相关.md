@@ -258,11 +258,11 @@ public class Chinese extends Person {
 
 根据上下文环境，final关键字存在细微的差别，但通常它指“无法改变”。以下谈论final关键字使用的三种情况：数据，方法，类
 
-* final数据
+### final数据
 
-  在编译代码的过程中，向编译器告知一块数据是恒定不变的，比如：
-  1. 一个永不改变的编译常量。
-  2. 一个在运行时被初始化的值，你希望他不会发生改变。    
+在编译代码的过程中，向编译器告知一块数据是恒定不变的，比如：
+1. 一个永不改变的编译常量。
+2. 一个在运行时被初始化的值，你希望他不会发生改变。    
 
 对于（1）编译常量，在Java中这种编译常量必须是基本数据类型，并以final关键字修饰，在对这个常量进行定义时，必须对其赋值。 
 而对于对象引用时，final关键字则是使引用恒定不变，一旦引用被初始化指向一个对象，就无法将它改为指向另一个对象。然而对象本身却是可以修改的。
@@ -329,9 +329,61 @@ public class Father {
 
 `v1`到`VAL_3`说明了final修饰引用的情况：不能因为`v2`是final的就认为无法改变它的值，它是一个引用，final表示无法将`v2`指向一个新的引用。这对数组同理。（数组只不过是另一种引用）。
 
+### final参数
+
+Java允许在参数列表中以声明的方式将参数指明为final。这意味着你无法在方法中更改参数引用所指向的对象
+
+```java
+package JavaBase.Final;
+public class Child {
+    void with(final Gizmo g) {
+        //g = new Gizmo(); 无法修改该引用
+    }
+    void without(Gizmo g) {
+        g = new Gizmo();
+        g.spin();
+    }
+
+}
+class Gizmo {
+    public void spin() {
+    }
+
+    ;
+}
+
+```
 
 
 
+### final方法
+在使用final时，注意，只有在想明确禁止该方法在子类中重写的情况下才将方法设置为final。final修饰的方法表示此方法已经是“最后的、最终的”含义，亦即此方法不能被重写（可以重载多个final修饰的方法）。此处需要注意的一点是：因为重写的前提是子类可以从父类中继承此方法，<font color = 'red'>如果父类中final修饰的方法同时访问控制权限为private，将会导致子类中不能直接继承到此方法，因此，此时可以在子类中定义相同的方法名和参数，此时不再产生重写与final的矛盾，而是在子类中重新定义了新的方法。（注：类的private方法会隐式地被指定为final方法。）</font>
+
+```java
+package JavaBase.Final;
+public class Father {
+ public final void getName(){};
+ public void getName(String a){};
+ private final void getName2(){};
+ private void getName2(String b){};
+}
+package JavaBase.Final;
+public class Child extends Father{
+    //getName()方法为final修饰 无法被子类重写
+    //'getName()' cannot override 'getName()' in 'JavaBase.Final.Father'; overridden method is final
+    //public void getName(){};
+  
+    //父类中getName2()为private修饰，关键字private的意思是除了该成员的类以外，其他任何类都无法访问该成员，子类无法继承该方法
+    //getName2()相当于子类重新定义的心方法
+    public void getName2(){};
+}
+      
+```
+
+
+### final类
+当用final修饰一个类时，表明这个类不能被继承。也就是说，如果一个类你永远不会让他被继承，就可以用final进行修饰。
+final类中的成员变量可以根据需要设为final，<font color = 'red'>但是要注意final类中的所有成员方法都会被隐式地指定为final方法。</font>
 
 
 
@@ -608,6 +660,10 @@ castille = Constructor
 
 **为了保证父类能够正常初始化，实际在子类构造方法中，相当于隐含了一个语句super()，调用父类的无参构造。同时如果父类里没有提供默认的无参构造器，那么这个时候就必须使用super(参数)显式调用的父类构造方法。(详细见super关键字)**
 
+#### 继承与初始化
+
+当在Parrot上运行时，首先会加载这个类的编译代码（.class文件），当注意到他有一个基类时，它将会加载基类，以此类推，然后根基类的static初始化将被执行。然后是下一个导出类，以此类推（这很重要，因为导出类的的static初始化可能会依赖于基类成员能否被正确初始化），加载结束后，对象就可以被创建了，基本类型会被初始化，对象引用被设置为null，在基类构造器完成后，实例变量依次初始化，最后执行剩余部分。
+
 ```java
 class Animal{
     private static int A = printInit("static Animal region init ");
@@ -660,7 +716,7 @@ class Parrot extends Bird{
 //--Parrot构造器--
 ```
 
-**通过代码可以观察到，执行的顺序是父类静态代码块>子类静态代码块>父类代码块>父类代码块>父类构造器>子类代码块>子类构造器**
+**通过代码可以观察到，执行的顺序是父类静态代码块>子类静态代码块>父类代码块>父类构造器>子类代码块>子类构造器**
 
 
 
@@ -694,22 +750,6 @@ Father
 Child
 
 由导出类（Child）转换成Father类，在继承图上是向上移动的，所以一般称为**向上转型**，向上转型是一种专用类型向通用类型的转换，所以总是很安全的。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

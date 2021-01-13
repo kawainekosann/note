@@ -25,6 +25,7 @@ npm是Node.js的包管理工具（package manager）。
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
 ```
 #### npm安装
+
 在用 Vue 构建大型应用时推荐使用 NPM 安装。
 
 ```
@@ -51,6 +52,8 @@ var app = new Vue({
   }
 })
 ```
+<font color = 'red'>注意 vue的`<script>`标签放在页面内容下面，先加载页面在执行js</font>
+
 注意我们不再和 HTML 直接交互了。一个 Vue 应用会将其挂载到一个 DOM 元素上 (对于这个例子是 `#app`) 然后对其进行完全控制。那个 HTML 是我们的入口，但其余都会发生在新创建的 Vue 实例内部。
 除了文本插值，我们还可以像这样来绑定元素 attribute：
 
@@ -169,6 +172,8 @@ Vue.component('todo-item', {
 })
 var app = new Vue(...)
 ```
+
+<font color = 'red'>组件创建后无法直接用，**组件最外层需要Vue实例包裹**</font>
 
 现在你可以用它构建另一个组件模板：
 
@@ -2987,7 +2992,7 @@ Vue.component('base-input', {
 
 这个模式允许你在使用基础组件的时候更像是使用原始的 HTML 元素，而不会担心哪个元素是真正的根元素：
 
-```
+```html
 <base-input
   v-model="username"
   required

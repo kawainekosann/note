@@ -173,7 +173,7 @@ Vue.component('todo-item', {
 var app = new Vue(...)
 ```
 
-<font color = 'red'>组件创建后无法直接用，**组件最外层需要Vue实例包裹**</font>
+<font color = 'red'>组件创建要在使用标签之前，组件创建后无法直接用，**组件最外层需要Vue实例包裹**</font>
 
 现在你可以用它构建另一个组件模板：
 
@@ -486,7 +486,7 @@ Mustache 语法不能作用在 HTML attribute 上，遇到这种情况应该使�
 <a v-bind:[attributeName]="url"> ... </a>
 ```
 
-这里的 `attributeName` 会被作为一个 JavaScript 表达式进行动态求值，求得的值将会作为最终的参数来使用。例如，如果你的 Vue 实例有一个 `data` property `attributeName`，其值为 `"href"`，那么这个绑定将等价于 `v-bind:href`。
+这里的 `attributeName`，<font color= 'red'>这里的attribut名必须小写</font> 会被作为一个 JavaScript 表达式进行动态求值，求得的值将会作为最终的参数来使用。例如，如果你的 Vue 实例有一个 `data` property `attributeName`，其值为 `"href"`，那么这个绑定将等价于 `v-bind:href`。
 
 同样地，你可以使用动态参数为一个动态的事件名绑定处理函数：
 
@@ -511,7 +511,7 @@ Mustache 语法不能作用在 HTML attribute 上，遇到这种情况应该使�
 
 变通的办法是使用没有空格或引号的表达式，或用计算属性替代这种复杂表达式。
 
-在 DOM 中使用模板时 (直接在一个 HTML 文件里撰写模板)，还需要避免使用大写字符来命名键名，因为浏览器会把 attribute 名全部强制转为小写：
+在 DOM 中使用模板时 (直接在一个 HTML 文件里撰写模板)，<font color = 'red'>还需要避免使用大写字符来命名键名，因为浏览器会把 attribute 名全部强制转为小写</font>：
 
 ```html
 <!--
@@ -3058,7 +3058,12 @@ yarn global add @vue/cli
 Create a project:
 
 ```bash
-vue create my-project
-# OR
-vue ui
+vue init webpack vuetest #vuetest 为项目名要求小写
+npm -g i eslint-cli #可能会提示没有装eslint
+npm install eslint --save-dev
 ```
+
+![vue工程结构](C:\Users\LIUQI\Desktop\NekoNote\feimaoNotes\img\vue工程结构.png)
+
+
+

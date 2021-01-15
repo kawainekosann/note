@@ -173,7 +173,7 @@ Vue.component('todo-item', {
 var app = new Vue(...)
 ```
 
-<font color = 'red'>组件创建要在使用标签之前，组件创建后无法直接用，**组件最外层需要Vue实例包裹**</font>
+<font color = 'red'>组件创建后无法直接用，**组件最外层需要Vue实例包裹。组件创建要在使用Vue实例之前。**</font> 
 
 现在你可以用它构建另一个组件模板：
 
@@ -1070,7 +1070,7 @@ Vue 会尽可能高效地渲染元素，通常会复用已有元素而不是从�
 
 另一个用于根据条件展示元素的选项是 `v-show` 指令。用法大致一样：
 
-```
+```html
 <h1 v-show="ok">Hello!</h1>
 ```
 
@@ -1309,6 +1309,7 @@ methods: {
 ### `v-for` 与 `v-if` 一同使用
 注意我们**不**推荐在同一元素上使用 `v-if` 和 `v-for`。
 当它们处于同一节点，`v-for` 的优先级比 `v-if` 更高，这意味着 `v-if` 将分别重复运行于每个 `v-for` 循环中。当你只想为*部分*项渲染节点时，这种优先级的机制会十分有用，如下：
+
 ```html
 <li v-for="todo in todos" v-if="!todo.isComplete">
   {{ todo }}
@@ -1444,6 +1445,7 @@ var example1 = new Vue({
 ### 事件处理方法
 然而许多事件处理逻辑会更为复杂，所以直接把 JavaScript 代码写在 `v-on` 指令中是不可行的。因此 `v-on` 还可以接收一个需要调用的方法名称。
 示例：
+
 ```html
 <div id="example-2">
   <!-- `greet` 是在下面定义的方法名 -->
@@ -1792,7 +1794,7 @@ new Vue({
 ```
 ```javascript
 new Vue({
-  el: '...',
+  el: '#example-5',
   data: {
     selected: ''
   }

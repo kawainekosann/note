@@ -513,7 +513,7 @@ AOP是OOP（面向对象）的延续，是软件开发的一个热点，也是Sp
 
 
 
-### 动态代理
+### Jdk动态代理
 
 JDK提供了java.lang.reflect.InvocationHandler接口和 java.lang.reflect.Proxy类，这两个类相互配合，入口是Proxy，所以我们先聊它。
 
@@ -693,6 +693,53 @@ public class ProxyTest {
 ```
 
 
+
+### cglib动态代理
+
+例：
+
+```java
+public class ProxyTest {
+    static private Target target = new Target();
+    //获得增强对象
+    static private Advice advice = new Advice();
+    //返回值 就是动态生成的代理对象 基于cglib
+    public static void main(final String[] args) {
+        //1.创建增强器
+        Enhancer enhancer = new Enhancer();
+        //2.设置父类
+        enhancer.setSuperclass(Target.class);
+        //3.设置回调
+        enhancer.setCallback(new MethodInterceptor() {
+            public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+                advice.before();
+                Object invoke = method.invoke(target,args);
+                advice.after();
+                return invoke;
+            }
+        });
+        //4.创建代理对象 此处是父子关系
+        Target proxy = (Target) enhancer.create();
+        proxy.save();
+    }
+}
+```
+
+
+
+### AOP相关概念
+
+Spring的AOP实现底层是对上面的动态代理的代码进行了封装，封装后我们只需要对需要关注的部分进行代码编写，并通过配置的方式完成指定目标方法的增强
+
+在正式讲解APO的操作之前，我们必须理解AOP的相关术语，常用的术语如下：
+
+* Target（目标对象）：代理的目标对象
+* Proxy（代理）：一个类被AOP织入增强后，就产生了一个结果代理类
+* Joinpoint（连接点）（可以被增强的方法）：所谓的连接点是指那些被拦截到的点，在spring中，这些点指的是方法。因为spring只支持方法类型的连接点
+* Pointcut（切入点）（在程序运行过程中被增强的方法称为切入点；就是实际被配置了的连接点）：所谓的切入点是指我们要对哪些Joinpoint进行拦截的定义。
+* Advice（通知、增强）：所谓通知就是拦截到Joinpoint之后要做的事情（就是增强方法）
+* Aspect（切面）（切入点+通知、增强）：是切入点和通知（引介）的结合。
+* Weaving（织入）：是指把增强应用到目标对象来创建新的代理对象的过程。spring采用动态代理织入，而AspectJ采用编译器织入和类装载期织入
 
 
 

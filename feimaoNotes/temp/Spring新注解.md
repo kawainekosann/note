@@ -55,7 +55,12 @@ UserService userService = ac.getBean("userService");
 
 5. 创建测试方法进行测试
 
-   
+
+```java
+@RunWith(SpringJUnit4ClassRunner.class)
+//@ContextConfiguration("classpath:applicationContext.xml")
+@ContextConfiguration(classes = AppicationConfig.class)
+```
 
 ## Spring的AOP简介
 

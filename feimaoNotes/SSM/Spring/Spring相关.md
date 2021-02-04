@@ -456,271 +456,241 @@ AOP是OOP（面向对象）的延续，是软件开发的一个热点，也是Sp
 * JDK代理： 基于接口的动态代理技术
 * cglib代理：基于父类的动态代理技术
 
-### 
 
-### JDK动态代理
 
-#### 简单理解代理
+### **静态代理**
 
-很简单举个例子：
+假设现在项目经理有一个需求：在项目现有所有类的方法前后打印日志。
 
-- 现在我是一个明星，拥有很多粉丝。粉丝希望我唱歌给他们听，但是如果都是我来接应他们，我岂不是很忙….于是乎，我就去找了个经纪人。这个**经纪人就代表了我**。当粉丝想要我唱歌的时候，应该是找经纪人，告诉经纪人想让我唱歌。
-- 现在我越来越红了，不是粉丝想要我唱歌，我就唱了。我要收费了。但是呢，作为一个公众人物，不可能是我自己说：我要收10000万，我才会去唱歌。于是这就**让经纪人对粉丝说：只有10000万，我才会唱歌。**
-- 无论外界是想要我干什么，都要经过我的经纪人。我的**经纪人也会在其中考虑收费、推脱它们的请求。**
+你如何在**不修改已有代码的前提下**，完成这个需求？
 
-**经纪人就是代理，实际上台唱歌、表演的还是我**
+我首先想到的是静态代理。具体做法是：
 
-#### 静态代理
+1.为现有的每一个类都编写一个**对应的**代理类，并且让它实现和目标类相同的接口（假设都有）
 
-直接使用例子来说明吧…现在我**有一个IUserDao的接口，拥有save方法()**
+![img](../../img/静态代理1.jpg)
+
+2.在创建代理对象时，通过构造器塞入一个目标对象，然后在代理对象的方法内部调用目标对象同名方法，并在调用前后打印日志。也就是说，**代理对象 = 增强代码 + 目标对象（原对象）**。有了代理对象后，就不用原对象了
+
+![img](../../img/静态代理2.jpg)
+
+
+**静态代理的缺陷**
+
+程序员要手动为每一个目标类编写对应的代理类。如果当前系统已经有成百上千个类，工作量太大了。所以，现在我们的努力方向是：如何少写或者不写代理类，却能完成代理功能？
+
+**复习对象的创建**
+
+很多初学Java的朋友眼中创建对象的过程
+
+![img](../../img/对象创建1.jpg)
+
+
+
+实际上可以换个角度，也说得通
+
+![img](../../img/对象创建2.jpg)
+
+
+
+所谓的Class对象，是Class类的实例，而Class类是描述所有类的，比如Person类，Student类
+
+![img](../../img/对象创建3.jpg)
+
+
+
+可以看出，要创建一个实例，最关键的就是**得到对应的Class对象。**只不过对于初学者来说，new这个关键字配合构造方法，实在太好用了，底层隐藏了太多细节，一句 Person p = new Person();直接把对象返回给你了。我自己刚开始学Java时，也没意识到Class对象的存在。
+
+分析到这里，貌似有了思路：
+
+**能否不写代理类，而直接得到代理Class对象，然后根据它创建代理实例（反射）。**
+
+**Class对象包含了一个类的所有信息，比如构造器、方法、字段等**。如果我们不写代理类，这些信息从哪获取呢？苦思冥想，突然灵光一现：代理类和目标类理应实现同一组接口。**之所以实现相同接口，是为了尽可能保证代理对象的内部结构和目标对象一致，这样我们对代理对象的操作最终都可以转移到目标对象身上，代理对象只需专注于增强代码的编写。**还是上面这幅图：
+
+![img](../../img/静态代理2.jpg)
+
+所以，可以这样说：**接口拥有代理对象和目标对象共同的类信息**。所以，我们可以从接口那得到理应由代理类提供的信息。但是别忘了，接口是无法创建对象的，怎么办？
+
+
+
+### 动态代理
+
+JDK提供了java.lang.reflect.InvocationHandler接口和 java.lang.reflect.Proxy类，这两个类相互配合，入口是Proxy，所以我们先聊它。
+
+Proxy有个静态方法：getProxyClass(ClassLoader, interfaces)，**只要你给它传入类加载器和一组接口，它就给你返回代理Class对象。**
+
+用通俗的话说，getProxyClass()这个方法，会从你传入的接口Class中，“拷贝”类结构信息到一个新的Class对象中，但新的Class对象带有构造器，是可以创建对象的。打个比方，一个大内太监（接口Class），空有一身武艺（类信息），但是无法传给后人。现在江湖上有个妙手神医（Proxy类），发明了克隆大法（getProxyClass），不仅能克隆太监的一身武艺，还保留了小DD（构造器）...（这到底是道德の沦丧，还是人性的扭曲，欢迎走进动态代理）
+
+所以，一旦我们明确接口，完全可以通过接口的Class对象，创建一个代理Class，通过代理Class即可创建代理对象。
+
+大体思路:
+
+![img](../../img/动态代理1.jpg)
+
+静态代理:
+
+![img](../../img/动态代理2.jpg)
+
+动态代理:
+
+![img](../../img/动态代理3.jpg)
+
+所以，按我理解，Proxy.getProxyClass()这个方法的本质就是：**以Class造Class。**
+
+有了Class对象，就很好办了，具体看代码：
+
+![img](../../img/动态代理4.jpg)
+
+完美。
+
+根据**代理Class的构造器创建对象时，需要传入InvocationHandler**。每次调用代理对象的方法，最终都会调用InvocationHandler的invoke()方法：
+
+![img](../../img/动态代理5.jpg)
+
+怎么做到的呢？
+
+上面不是说了吗，根据代理Class的构造器创建对象时，需要传入InvocationHandler。**通过构造器传入一个引用，那么必然有个成员变量去接收。**没错，代理对象的内部确实有个成员变量invocationHandler，而且**代理对象的每个方法内部都会调用handler.invoke()**！InvocationHandler对象成了代理对象和目标对象的桥梁，不像静态代理这么直接。
+
+![img](../../img/动态代理6.jpg)
+
+
+
+大家仔细看上图右侧的动态代理，我在invocationHandler的invoke()方法中并没有写目标对象。因为一开始invocationHandler的invoke()里确实没有目标对象，需要我们手动new。
+
+![img](../../img/动态代理7.jpg)
+
+
+
+但这种写法不够优雅，属于硬编码。我这次代理A对象，下次想代理B对象还要进来改invoke()方法，太差劲了。改进一下，让调用者把目标对象作为参数传进来：
 
 ```java
-// 接口
-public interface IUserDao {
-    void save();
+public class ProxyTest {
+	public static void main(String[] args) throws Throwable {
+		CalculatorImpl target = new CalculatorImpl();
+                //传入目标对象
+                //目的：1.根据它实现的接口生成代理对象 2.代理对象调用目标对象方法
+		Calculator calculatorProxy = (Calculator) getProxy(target);
+		calculatorProxy.add(1, 2);
+		calculatorProxy.subtract(2, 1);
+	}
+
+	private static Object getProxy(final Object target) throws Exception {
+		//参数1：随便找个类加载器给它， 参数2：目标对象实现的接口，让代理对象实现相同接口
+		Class proxyClazz = Proxy.getProxyClass(target.getClass().getClassLoader(), target.getClass().getInterfaces());
+		Constructor constructor = proxyClazz.getConstructor(InvocationHandler.class);
+		Object proxy = constructor.newInstance(new InvocationHandler() {
+			@Override
+			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+				System.out.println(method.getName() + "方法开始执行...");
+				Object result = method.invoke(target, args);
+				System.out.println(result);
+				System.out.println(method.getName() + "方法执行结束...");
+				return result;
+			}
+		});
+		return proxy;
+	}
 }
 ```
 
-- **UserDao实现该接口，重写save()方法**
+这样就非常灵活，非常优雅了。无论现在系统有多少类，只要你把实例传进来，getProxy()都能给你返回对应的代理对象。就这样，我们完美地跳过了代理类，直接创建了代理对象！
+
+
+
+不过实际编程中，一般不用getProxyClass()，而是使用Proxy类的另一个静态方法：Proxy.newProxyInstance()，直接返回代理实例，连中间得到代理Class对象的过程都帮你隐藏：
 
 ```java
-public class UserDao implements IUserDao{
-    @Override
-    public void save() {
-        System.out.println("-----已经保存数据！！！------");
-    }
+public class ProxyTest {
+	public static void main(String[] args) throws Throwable {
+		CalculatorImpl target = new CalculatorImpl();
+		Calculator calculatorProxy = (Calculator) getProxy(target);
+		calculatorProxy.add(1, 2);
+		calculatorProxy.subtract(2, 1);
+	}
+
+	private static Object getProxy(final Object target) throws Exception {
+		Object proxy = Proxy.newProxyInstance(
+				target.getClass().getClassLoader(),/*类加载器*/
+				target.getClass().getInterfaces(),/*让代理对象和目标对象实现相同接口*/
+				new InvocationHandler(){/*代理对象的方法最终都会被JVM导向它的invoke方法*/
+					public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+						System.out.println(method.getName() + "方法开始执行...");
+						Object result = method.invoke(target, args);
+						System.out.println(result);
+						System.out.println(method.getName() + "方法执行结束...");
+						return result;
+					}
+				}
+		);
+		return proxy;
+	}
 }
 ```
 
-现在，我想要在**save()方法保存数据前开启事务、保存数据之后关闭事务**…(当然啦，直接再上面写不就行了吗…**业务方法少的时候，确实没毛病**…)
+
+
+现在，我想题主应该能看懂动态代理了。
+
+![img](../../img/动态代理8.jpg)
+
+
+
+
+
+最后讨论一下代理对象是什么类型。
+
+首先，请区分两个概念：代理Class对象和代理对象。
+
+![img](../../img/动态代理9.jpg)
+
+单从名字看，代理Class和Calculator的接口确实相去甚远，但是我们却能将代理对象赋值给接口类型：
+
+![img](../../img/动态代理10.jpg)
+
+千万别觉得名字奇怪，就怀疑它不能用接口接收，只要实现该接口就是该类型。
+
+> 代理对象的本质就是：和目标对象实现相同接口的实例。代理Class可以叫任何名字，whatever，只要它实现某个接口，就能成为该接口类型。
+
+
+
+### **小结**
+我想了个很骚的比喻，希望能解释清楚：
+接口Class对象是大内太监，里面的方法和字段比做他的一身武艺，但是他没有小DD（构造器），所以不能new实例。一身武艺后继无人。
+那怎么办呢？
+正常途径（implements）：
+写一个类，实现该接口。这个就相当于大街上拉了一个人，认他做干爹。一身武艺传给他，只是比他干爹多了小DD，可以new实例。
+非正常途径（动态代理）：
+通过妙手圣医Proxy的克隆大法（Proxy.getProxyClass()），克隆一个Class，但是有小DD。所以这个克隆人Class可以创建实例，也就是代理对象。
+代理Class其实就是附有构造器的接口Class，一样的类结构信息，却能创建实例。
+
+
+
+例：
 
 ```java
-    public void save() {
-        System.out.println("开启事务");
-        System.out.println("-----已经保存数据！！！------");
-        System.out.println("关闭事务");
-    }
-```
-
-但是呢，现在如果我有好多好多个业务方法都需要开启事务、关闭事务呢？
-
-```java
-    public void save() {
-        System.out.println("开启事务");
-        System.out.println("-----已经保存数据！！！------");
-        System.out.println("关闭事务");
-    }
-    public void delete() {
-        System.out.println("开启事务");
-        System.out.println("-----已经保存数据！！！------");
-        System.out.println("关闭事务");
-    }
-    public void update() {
-        System.out.println("开启事务");
-        System.out.println("-----已经保存数据！！！------");
-        System.out.println("关闭事务");
-    }
-    public void login() {
-        System.out.println("开启事务");
-        System.out.println("-----已经保存数据！！！------");
-        System.out.println("关闭事务");
-    }
-```
-
-…..我们发现就**有了很多很多的重复代码了**…我们要做的就是：当**用户调用UserDao方法的时候，找的是代理对象、而代理帮我在解决这么繁琐的代码**
-
-于是呢，我们就**请了一个代理了**
-
-- **这个代理要和userDao有相同的方法…没有相同的方法的话，用户怎么调用啊？？**
-- **代理只是对userDao进行增强，真正做事的还是userDao..**
-
-因此，我们的代理就要实现IUserDao接口，这样的话，代理就跟userDao有相同的方法了。
-
-```java
-public class UserDaoProxy implements IUserDao{
-    // 接收保存目标对象【真正做事的还是UserDao】，因此需要维护userDao的引用
-    private IUserDao target;
-    public UserDaoProxy(IUserDao target) {
-        this.target = target;
-    }
-    @Override
-    public void save() {
-        System.out.println("开始事务...");
-        target.save();          // 执行目标对象的方法
-        System.out.println("提交事务...");
-    }
-```
-
-**外界并不是直接去找UserDao,而是要通过代理才能找到userDao**
-
-```java
+public class ProxyTest {
+    static private Target target = new Target();
+    //获得增强对象
+    static private Advice advice = new Advice();
     public static void main(String[] args) {
-        // 目标对象
-        IUserDao target = new UserDao();
-        // 代理
-        IUserDao proxy = new UserDaoProxy(target);
-        proxy.save();  // 执行的是，代理的方法
-    }
-```
-
-这样一来，我们在UserDao中就不用写那么傻逼的代码了…傻逼的事情都交给代理去干了…
-
-#### 为什么要用动态代理？
-
-我们首先来看一下**静态代理的不足**：
-
-- **如果接口改了，代理的也要跟着改，很烦！**
-- **因为代理对象，需要与目标对象实现一样的接口。所以会有很多代理类，类太多。**
-
-动态代理比静态代理好的地方：
-
-- 代理对象，不需要实现接口【就不会有太多的代理类了】
-- 代理对象的生成，是利用JDKAPI， **动态地在内存中构建代理对象(需要我们指定创建 代理对象/目标对象 实现的接口的类型；**)
-
-------
-
-### 动态代理快速入门
-
-**Java提供了一个Proxy类，调用它的newInstance方法可以生成某个对象的代理对象,该方法需要三个参数：**
-
-![这里写图片描述](/Users/liuqi/Desktop/note/feimaoNotes/temp/../img/JDK动态代理.png)
-
-- 参数一：生成代理对象使用哪个类装载器【一般我们使用的是代理类的装载器】
-- 参数二：生成哪个对象的代理对象，通过接口指定【指定被代理类的接口或者代理类的接口 两者接口一样】
-- 参数三：生成的代理对象的方法里干什么事【实现handler接口，我们想怎么实现就怎么实现】
-
-在编写动态代理之前，要明确两个概念：
-
-- **代理对象拥有目标对象相同的方法【因为参数二指定了对象的接口】**
-- **用户调用代理对象的什么方法，都是在调用处理器的invoke方法。**
-- **使用JDK动态代理必须要有接口【参数二需要接口】**
-
-#### 对象
-
-小明是一个明星，拥有唱歌和跳舞的方法。实现了人的接口
-
-```java
-public class XiaoMing implements Person {
-    @Override
-    public void sing(String name) {
-        System.out.println("小明唱" + name);
-    }
-    @Override
-    public void dance(String name) {
-        System.out.println("小明跳" + name);
-    }
-}
-```
-
-------
-
-#### 接口
-
-```java
-public interface Person {
-    void sing(String name);
-    void dance(String name);
-}
-```
-
-#### 代理类
-
-```java
-public class XiaoMingProxy {
-    //代理只是一个中介，实际干活的还是小明，于是需要在代理类上维护小明这个变量
-    XiaoMing xiaoMing = new XiaoMing();
-    //返回代理对象
-    public Person getProxy() {
-        /**
-         * 参数一：代理类的类加载器
-         * 参数二：被代理对象的接口或者代理类的接口 他俩一样
-         * 参数三：InvocationHandler实现类
-         */
-        return (Person)Proxy.newProxyInstance(XiaoMingProxy.class.getClassLoader(), xiaoMing.getClass().getInterfaces(), new InvocationHandler() {
-            /**
-             * proxy : 把代理对象自己传递进来
-             * method：把代理对象当前调用的方法传递进来
-             * args:把方法参数传递进来
-             */
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                //如果别人想要让小明唱歌
-                if (method.getName().equals("sing")) {
-                    System.out.println("给1000万来再唱");
-                    //实际上唱歌的还是小明
-                    method.invoke(xiaoMing, args);
+        TargetInterface proxy = (TargetInterface) Proxy.newProxyInstance(
+                target.getClass().getClassLoader(),//目标对象的类加载器
+                target.getClass().getInterfaces(),//目标对象相同的接口字节码对象
+                new InvocationHandler() {
+                    //调用代理对象是实际执行invoke方法
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        //这里的invoke是通过反射执行方法
+                        advice.before();
+                        method.invoke(target, args);
+                        advice.after();
+                        return null;
+                    }
                 }
-                return null;
-            }
-        });
+        );
+        proxy.save();
     }
 }
 ```
-
-------
-
-#### 测试类
-
-```java
-    public static void main(String[] args) {
-        //外界通过代理才能让小明唱歌
-        XiaoMingProxy xiaoMingProxy = new XiaoMingProxy();
-        Person proxy = xiaoMingProxy.getProxy();
-        proxy.sing("我爱你");
-    }
-```
-
-
-
-#### Java 动态代理类 
-
-Java动态代理类位于java.lang.reflect包下，一般主要涉及到以下两个类：
-
-1. Interface InvocationHandler：该接口中仅定义了一个方法
-
-```java
-public object invoke(Object obj,Method method, Object[] args)
-```
-
-在实际使用时，第一个参数obj一般是指代理类，method是被代理的方法，args为该方法的参数数组。这个抽象方法在代理类中动态实现。
-
-2. Proxy：该类即为动态代理类，其中主要包含以下内容：	
-
-3. protected Proxy(InvocationHandler h)：构造函数，用于给内部的h赋值。
-
-4. static Class getProxyClass (ClassLoaderloader, Class[] interfaces)：获得一个代理类，其中loader是类装载器，interfaces是真实类所拥有的全部接口的数组。
-
-   3. static Object newProxyInstance(ClassLoaderloader, Class[] interfaces, InvocationHandler h)：返回代理类的一个实例，返回后的代理类可以当作被代理类使用(可使用被代理类的在Subject接口中声明过的方法)
-
-      
-
-      所谓DynamicProxy是这样一种class：它是在运行时生成的class，在生成它时你必须提供一组interface给它，然后该class就宣称它实现了这些 interface。你当然可以把该class的实例当作这些interface中的任何一个来用。当然，这个DynamicProxy其实就是一个Proxy，它不会替你作实质性的工作，在生成它的实例时你必须提供一个handler，由它接管实际的工作。
-      在使用动态代理类时，我们必须实现InvocationHandler接口
-      通过这种方式，被代理的对象(RealSubject)可以在运行时动态改变，需要控制的接口(Subject接口)可以在运行时改变，控制的方式(DynamicSubject类)也可以动态改变，从而实现了非常灵活的动态代理关系。
-
-
-
-#### **动态代理步骤**：
-
-1.创建一个实现接口InvocationHandler的类，它必须实现invoke方法
-2.创建被代理的类以及接口
-3.通过Proxy的静态方法
-newProxyInstance(ClassLoaderloader, Class[] interfaces, InvocationHandler h)创建一个代理
-4.通过代理调用方法
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

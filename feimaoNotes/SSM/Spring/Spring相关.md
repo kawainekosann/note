@@ -727,7 +727,7 @@ public class ProxyTest {
 
 
 
-### AOP相关概念
+## AOP相关概念
 
 Spring的AOP实现底层是对上面的动态代理的代码进行了封装，封装后我们只需要对需要关注的部分进行代码编写，并通过配置的方式完成指定目标方法的增强
 
@@ -738,8 +738,172 @@ Spring的AOP实现底层是对上面的动态代理的代码进行了封装，�
 * Joinpoint（连接点）（可以被增强的方法）：所谓的连接点是指那些被拦截到的点，在spring中，这些点指的是方法。因为spring只支持方法类型的连接点
 * Pointcut（切入点）（在程序运行过程中被增强的方法称为切入点；就是实际被配置了的连接点）：所谓的切入点是指我们要对哪些Joinpoint进行拦截的定义。
 * Advice（通知、增强）：所谓通知就是拦截到Joinpoint之后要做的事情（就是增强方法）
-* Aspect（切面）（切入点+通知、增强）：是切入点和通知（引介）的结合。
+* Aspect（切面）（切入点+通知/增强）：是切入点和通知（引介）的结合。
 * Weaving（织入）：是指把增强应用到目标对象来创建新的代理对象的过程。spring采用动态代理织入，而AspectJ采用编译器织入和类装载期织入
+
+
+
+## AOP开发明确事项
+
+1. 需要编写的内容
+
+* 编写核心业务代码（目标类的方法）
+* 编写切面类，切面类中有通知（增强功能方法）
+* 在配置文件中，配置织入关系，即将通知与连接点结合
+
+2. AOP技术实现的内容
+    spring框架监控切入点方法的执行。一旦监控到切入点方法被运行，使用代理机制，动态创建目标对象的代理对象，根据通知类别，在代理对象的对应位置，将通知对应的功能织入，完成完整代码逻辑运行。
+
+3. AOP底层使用哪种代理方式
+
+  框架会根据是否实现了接口来决定采用哪种动态代理的方式
+
+
+
+## 基于XML的AOP开发
+
+### 快速入门
+
+1. 导入aop相关坐标
+2. 创建目标接口和目标类（内部有切点）
+3. 创建切面类（内部有增强方法）
+4. 将目标类和切面类的对象创建权交给spring
+5. 在applicationContext.xml中配置织入关系
+6. 测试代码
+
+```xml
+<!--Spring推荐使用第三方aspectjweaver插件，该插件比自带的好用-->
+<dependency>
+    <groupId>org.apache.geronimo.bundles</groupId>
+    <artifactId>aspectjweaver</artifactId>
+    <version>1.6.8_2</version>
+</dependency>
+```
+
+
+
+### 切点表达式写法
+
+表达式语法
+
+```
+execution([修饰符] 返回值类型 包名.类名.方法名(参数)) 
+```
+
+* 访问修饰符可以省略
+* 返回值类型 包名 类名 方法名可以使用星号\* 代表任意
+* 包名与类名之间一个点.代表当前包下的类，两点..表示当前包及其子包下的类
+* 参数列表可以使用两个点..表示任意个数，任意类型的参数列表
+
+### 通知类型
+
+通知的配置语法
+
+```xml
+<aop通知类型 method="切面类中的方法名" pointcut="切点表达式"></aop通知类型>
+```
+
+**前置通知[Before advice]**：在连接点前面执行，前置通知不会影响连接点的执行，除非此处抛出异常。
+**正常返回通知[After returning advice]**：在连接点正常执行完成后执行，如果连接点抛出异常，则不会执行。
+**异常返回通知[After throwing advice]**：在连接点抛出异常后执行。
+**返回通知[After (finally) advice]**：在连接点执行完成后执行，不管是正常执行完成，还是抛出异常，都会执行返回通知中的内容。
+**环绕通知[Around advice]**：环绕通知围绕在连接点前后
+
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd"
+       xmlns:aop="http://www.springframework.org/schema/aop">
+    <!--引入AOP命名空间-->
+
+    <!--目标对象-->
+    <bean id="target" class="com.kawainekosann.aop.Target"></bean>
+    <!--切面对象-->
+    <bean id="myAspect" class="com.kawainekosann.aop.MyAspect"></bean>
+    <!--配置织入,告诉spring那些方法需要那些增强-->
+    <aop:config>
+        <!--声明切面-->
+        <aop:pointcut id="myPointcut" expression="execution(* com.kawainekosann.aop.*.*(..))"/>
+        <aop:aspect ref="myAspect">
+            <!--切面：切点+通知-->
+            <!--<aop:before method="before" pointcut="execution(public void com.kawainekosann.aop.Target.save())"></aop:before>-->
+            <!--<aop:before method="before" pointcut="execution(* com.kawainekosann.aop.*.*(..))"></aop:before>
+            <aop:after-returning method="afterReturning"
+                                 pointcut="execution(* com.kawainekosann.aop.*.*(..))"></aop:after-returning>-->
+            <aop:around method="arround" pointcut="execution(* com.kawainekosann.aop.*.*(..))"/>
+            <aop:after-throwing method="afterThrowing" pointcut="execution(* com.kawainekosann.aop.*.*(..))"/>
+            <!--<aop:after method="after" pointcut="execution(* com.kawainekosann.aop.*.*(..))"/>-->
+            <aop:after method="after" pointcut-ref="myPointcut"></aop:after>
+        </aop:aspect>
+    </aop:config>
+</beans>
+```
+
+
+
+## 基于注解的AOP开发
+
+基于直接的AOP开发步骤
+
+1. 创建目标接口和目标类（内部有切点）
+2. 创建切面类（内部有增强方法）
+3. 将目标类和切面类的对象创建权交给spring
+4. 在applicationContext.xml中配置织入关系
+5. 在配置文件中开启组件扫描和AOP的自动代理
+6. 测试代码
+
+```java
+@Component("myAspect")
+@Aspect//标注当前类是一个切面类
+public class MyAspect {
+    @Before("execution(* com.kawainekosann.anno.*.*(..))")
+    public void before() {
+        System.out.println("前置增强");
+    }
+    public void afterReturning(){
+        System.out.println("后置增强");
+    }
+    public void afterThrowing(){
+        System.out.println("异常抛出增强");
+    }
+
+    @Around("pointcut()")
+    //Proceeding JoinPoint 正在执行的连接点===切点
+    public Object arround(ProceedingJoinPoint pjp) throws Throwable {
+        System.out.println("环绕前。。。");
+        Object proceed = pjp.proceed();//切点方法
+        System.out.println("环绕后。。。");
+        return proceed;
+    }
+    @Around("MyAspect.pointcut()")
+    public void after(){
+        System.out.println("最终增强");
+    }
+
+    //定义切点表达式
+    @Pointcut("execution(* com.kawainekosann.anno.*.*(..))")
+    public void pointcut(){};
+}
+```
+
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:context="http://www.springframework.org/schema/context"
+>
+    <!--引入AOP命名空间 context命名空间（用于组件扫描）-->
+    <context:component-scan base-package="com.kawainekosann.anno"></context:component-scan>
+    <!--AOP自动代理-->
+    <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+</beans>
+```
+
+
 
 
 

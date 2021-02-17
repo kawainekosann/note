@@ -939,25 +939,429 @@ public class MyAspect {
 
 
 
+## jdbc template基本使用
+
+### jdbc template开发步骤
+
+1. 导入spring-jdbc和spring-tx坐标
+
+2. 创建数据库表和实体
+
+3. 创建jdbcTemplate对象
+
+   * ```java
+     JdbcTemplate jdbcTemplate = new JdbcTemplate();
+     //设置数据源对象，知道数据库在哪儿
+     jdbcTemplate.setDataSource(dataSource);
+     ```
+
+4. 执行数据库操作
+
+```xml
+<dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>4.1.3.RELEASE</version>
+   </dependency>
+   <dependency>
+       <groupId>org.springframework</groupId>
+       <artifactId>spring-tx</artifactId>
+       <version>5.0.5.RELEASE</version>
+</dependency>
+```
+
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context  http://www.springframework.org/schema/context/spring-context.xsd
+">
+
+    <context:property-placeholder location="classpath:jdbc.properties"></context:property-placeholder>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"></property>
+        <property name="url" value="${jdbc.url}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+    </bean>
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+</beans>
+```
+
+```properties
+jdbc.driver=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=utf8
+jdbc.username=root
+jdbc.password=67iwxh1314
+```
+
+```java
+@Test
+    public void Test2(){
+        ApplicationContext app= new ClassPathXmlApplicationContext("applicationContext.xml");
+        JdbcTemplate jdbcTemplate = (JdbcTemplate) app.getBean("jdbcTemplate");
+        int row = jdbcTemplate.update("insert into account (name,money) values (?,?)", new Object[]{"liu", 500});
+        System.out.println(row);
+    }
+```
+
+```java
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("classpath:applicationContext.xml")
+public class JdbcTemplateCRUDTest {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Test
+    public void testUpdate() {
+        jdbcTemplate.update("update account set money = ? where id =?", new Object[]{10000, 4});
+    }
+    @Test
+    public void delete() {
+        jdbcTemplate.update("delete from account where id = ?", "5");
+    }
+    @Test
+    public void testQueryAll() {
+        List<Account> accountList = jdbcTemplate.query("select * from account", new BeanPropertyRowMapper<Account>(Account.class));
+        System.out.println(accountList);
+    }
+    @Test
+    public void testQueryOne() {
+        Account account = jdbcTemplate.queryForObject("select * from account where id = ?", new BeanPropertyRowMapper<Account>(Account.class), "3");
+        System.out.println(account);
+    }
+    @Test
+    public void testQueryCount() {
+        Long account = jdbcTemplate.queryForObject("select count(*) from account",Long.class);
+        System.out.println(account);
+    }
+}
+```
 
 
 
+## Spring事务
+
+### Spring编程式事务控制相关对象
+
+PlatformTransactionManager接口是spring的事务管理器，它里面提供了我们常用的操作事务的方法
+
+不同的dao层技术有不同的实现类，例如jdbc或mybatis时:org.springframework.jdbc.datasource.DataSourceTransactionManager;
+
+技术是hibernate时:org.springframework.orm.hibernate5.hibernateTransactionManager
+
+### TransactionDefinition
+
+它是事务定义信息对象，有如下方法
+
+| 方法                         | 说明               |
+| ---------------------------- | ------------------ |
+| int getIsolationLevel()      | 获得事务隔离级别   |
+| int getPropogationBehavior() | 获得事务的传播行为 |
+| int getTimeOut()             | 获得超时时间       |
+| boolean isReadOnly()         | 是否只读           |
+
+#### 事务隔离级别
+
+设置隔离级别可以解决事务并发产生的问题，如脏读，不可重复读和虚读
+
+* ISOLATION_DEFAULT
+* ISOLATION_READ_UNCOMMITTED
+* ISOLATION_READ_COMMITTED
+* ISOLATION_REPEATABLE_READ
+* ISOLATION_SERIALIZABLE
+
+#### 事务传播行为
+
+![img](../../img/spring事务传播行为.png)
+
+超时时间：默认是-1，没有超时限制，如果有，以秒为单位进行设置
+
+是否只读：建议查询时设置为只读
+
+### TransactionStatus
+
+TransactionStatus提供的事务具体的运行状态，方法介绍如下
+
+| 方法                     | 说明           |
+| ------------------------ | -------------- |
+| boolean hasSavepoint()   | 是否存储回滚点 |
+| boolean isCompleted()    | 事务是否完成   |
+| oolean isNewTransaction  | 是否是新事物   |
+| boolean isRollbackOnly() | 事务是否回滚   |
+
+<font color = 'red'>编程式事务控制三大对象</font>
+
+* PlatformTransactionManager
+* TransactionDefinition
+* TransactionStatus
 
 
 
+### 基于xml的声明式事务控制
+
+#### 什么是声明式事务控制
+
+spring的声明式事务控制顾名思义就是<font color ='red'>采用声明的方式来处理事务</font>。这里所说的声明就是，用在spring配置文件中声明，用在spring配置文件中声明式的处理事务来代替代码式的处理事务
+
+#### 声明式事务处理的作用
+
+* 事务管理不侵入开发的组件，具体来说，业务逻辑对象就不会意识到正在事务管理之中，事实上也应该如此，因为事务管理是属于系统层面的服务。而不是业务逻辑的一部分。如果想要改变事务管理策划的话，也只需要在定义文件中重新配置即可。
+* 在不需要事务管理的时候，只要在设定文件上修改一下，即可一区事务管理服务，无需改变代码重新编译，这样维护起来极其方便
+
+<font color ='red'>注意：Spring声明式事务控制底层就是AOP</font>
 
 
 
+#### 声明式事务控制的实现
+
+声明式事务控制明确事项：
+
+1. 谁是切点  （业务方法）
+2. 谁是通知    
+3. 配置切面    
+
+#### 声明式事务配置要点
+
+* 平台事务管理器配置
+
+```xml
+    <!--配置平台事务管理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+```
+
+* 事务通知的配置
+
+```xml
+<!--通知 事务的管理 tx-->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <!--设置事务的属性信息 name:切点方法名称这里是service方法名称
+        isolation:事务隔离级别
+        propagation:事务传播行为
+        timeout:超时时间
+        read-only:是否只读-->
+        <tx:attributes>
+            <tx:method name="transfer" isolation="DEFAULT" propagation="REQUIRED" read-only="false"></tx:method>
+            <tx:method name="*" isolation="DEFAULT" propagation="REQUIRED" timeout="-1" read-only="false"/>
+        </tx:attributes>
+    </tx:advice>
+```
+
+* 事务aop织入的配置
+
+```xml
+<!--配置事务AOP织入-->
+    <aop:config>
+        <!--事务增强advisor-->
+        <aop:advisor advice-ref="txAdvice"
+                     pointcut="execution(* com.kawainekosann.service.AccountServiceImpl.*(..))">                      </aop:advisor>
+   </aop:config>
+```
 
 
 
+### 事务控制基于注解
+
+```xml
+   <context:component-scan base-package="com.kawainekosann"></context:component-scan>
+
+        <!--<bean id="accountDao" class="com.kawainekosann.dao.AccountDaoImpl">
+            <property name="jdbcTemplate" ref="jdbcTemplate"></property>
+        </bean>
+        &lt;!&ndash;目标对象 内部方法就是切点&ndash;&gt;
+        <bean id="accountService" class="com.kawainekosann.service.AccountServiceImpl">
+            <property name="accountDao" ref="accountDao"></property>
+        </bean>-->
+
+    <!--配置平台事务管理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--使用注解时要添加，事务的注解驱动-->
+    <tx:annotation-driven transaction-manager="transactionManager"></tx:annotation-driven>
+
+    <!--通知 事务的管理 tx-->
+    <!--<tx:advice id="txAdvice" transaction-manager="transactionManager">
+        &lt;!&ndash;设置事务的属性信息 name:切点方法名称这里是service方法名称
+        isolation:事务隔离级别
+        propagation:事务传播行为
+        timeout:超时时间
+        read-only:是否只读&ndash;&gt;
+        <tx:attributes>
+            <tx:method name="transfer" isolation="DEFAULT" propagation="REQUIRED" read-only="false"></tx:method>
+            <tx:method name="*" isolation="DEFAULT" propagation="REQUIRED" timeout="-1" read-only="false"/>
+        </tx:attributes>
+    </tx:advice>
+    &lt;!&ndash;配置事务AOP织入&ndash;&gt;
+    <aop:config>
+        &lt;!&ndash;事务增强advisor&ndash;&gt;
+        <aop:advisor advice-ref="txAdvice"
+                     pointcut="execution(* com.kawainekosann.service.AccountServiceImpl.*(..))"></aop:advisor>
+    </aop:config>-->
+```
+
+```java
+@Service
+//写在开头表示这是该类全局配置，如果类和方法上都配置了，以方法为主
+//@Transactional(isolation = Isolation.DEFAULT,propagation = Propagation.REQUIRED)
+public class AccountServiceImpl implements AccountService{
+    @Autowired
+    private AccountDao accountDao;
+
+    /*public void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
+    }*/
+
+    @Transactional(isolation = Isolation.DEFAULT,propagation = Propagation.REQUIRED)
+    public void transfer(String outMan, String inMan, double money) {
+        //开启事务
+        accountDao.out(outMan,money);
+        int i = 1/0;
+        accountDao.in(inMan,money);
+        //提交事务
+    }
+    //每个方法可以配自己的
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void xxx(){};
+}
+```
 
 
 
+## Spring集成web环境
+
+```xml
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet.jsp</groupId>
+            <artifactId>javax.servlet.jsp-api</artifactId>
+            <version>2.3.3</version>
+        </dependency>
+```
+
+* project structure modules中追加web模块
+
+![img](../../img/idea web.png)
+
+* 将maven的包导入web-info/lib文件夹，选中include in project build
+
+![iimg](/Users/liuqi/Desktop/note/feimaoNotes/img/idea web2.png)
+
+* Tomcat添加artfacts
+
+<img src="../../img/idea web3.png" alt="img" style="zoom:50%;" />
 
 
 
+### ApplicationContext应用上下文的获取方式
 
+应用上下文对象是通过<font color='red'>new ClassPathXmlApplicationContext(spring配置文件)</font>方式配置的，每次从容器中获取bean时都要编写<font color='red'>new ClassPathXmlApplicationContext(spring配置文件)</font>，这样的弊端是配置文件多次加载，应用上下文对象创建多次
+
+在web项目中可以使用<font color='red'>ServletContextListener</font>监听web应用的启动，我们可以在web应用启动时，就加在Spring的配置文件，创建应用上下文对象ApplicationContext，再将其存储到最大的域<font color='red'>ServletContext</font>域中，这样就可以在任意位置获得应用上下文的ApplicationContext对象了
+
+```java
+public class ContextLoaderListener implements ServletContextListener {
+    public void contextInitialized(ServletContextEvent sce) {
+        //ApplicationContext app = new ClassPathXmlApplicationContext("applicationContext.xml");
+        //将Spring应用的上下文对象存储到servletContext域中
+        ServletContext servletContext = sce.getServletContext();
+       //读取web.xml中的全局参数
+        String contextConfigLocation =servletContext.getInitParameter("contextConfigLocation");
+        ApplicationContext app = new ClassPathXmlApplicationContext(contextConfigLocation);
+        servletContext.setAttribute("app",app);
+        System.out.println("spring容器创建完毕");
+    }
+    public void contextDestroyed(ServletContextEvent sce) {
+
+    }
+}
+```
+
+```xml
+<!-- web.xml-->
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+    <!--全局初始化参数-->
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>applicationContext.xml</param-value>
+    </context-param>
+    <!--配置监听器-->
+    <listener>
+        <listener-class>com.kawainekosann.listener.ContextLoaderListener</listener-class>
+    </listener>
+    <servlet>
+        <servlet-name>UserServlet</servlet-name>
+        <servlet-class>com.kawainekosann.web.UserServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>UserServlet</servlet-name>
+        <url-pattern>/userServlet</url-pattern>
+    </servlet-mapping>
+</web-app>
+```
+
+```java
+public class UserServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //从ServletContext域中获取应用上下文
+        //req.getContextPath();
+        ServletContext servletContext = this.getServletContext();
+        ApplicationContext app = (ApplicationContext) servletContext.getAttribute("app");
+        //ApplicationContext app = new ClassPathXmlApplicationContext("applicationContext.xml");
+        UserService userService = app.getBean(UserService.class);
+        userService.save();
+    }
+}
+```
+
+### spring提供获取应用上下文的工具
+
+上面的分析不需要手动实现，Spring提供了一个监听器<font color='red'>ContextLoaderListener</font>就是对上述功能的封装，该监听器内部加载Spring配置文件，创建应用上下文，并存储到<font color='red'>ServletContext</font>域中，提供了一个客户端工具<font color='red'>WebApplicationContextUtils</font>供开发者获得应用上下文对象
+
+步骤
+
+1. 在web.xml中配置<font color='red'>ContextLoaderListener</font>监听器（导入spring-web坐标）
+2. 使用<font color='red'>WebApplicationContextUtils</font>获得应用上下文对象ApplicationContext
+
+```xml
+    <!--全局初始化参数-->
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <!--参数名一样，值为配置文件路径-->
+        <param-value>classpath:applicationContext.xml</param-value>
+    </context-param>
+    <!--配置监听器-->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+```
+
+```java
+protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //从ServletContext域中获取应用上下文
+        //req.getContextPath();
+        ServletContext servletContext = this.getServletContext();
+        //ApplicationContext app = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+        //ApplicationContext app = (ApplicationContext) servletContext.getAttribute("app");
+        //ApplicationContext app = new ClassPathXmlApplicationContext("applicationContext.xml");
+        WebApplicationContext app = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+        UserService userService = app.getBean(UserService.class);
+        userService.save();
+    }
+```
 
 
 

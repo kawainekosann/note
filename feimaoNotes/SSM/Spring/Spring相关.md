@@ -1163,6 +1163,9 @@ spring的声明式事务控制顾名思义就是<font color ='red'>采用声明�
    </aop:config>
 ```
 
+**`<aop:pointcut>`标签定义了切入点，也就是告诉spring，我要在这个切入点范围内进行事物控制了**
+**`<tx:method>`标签定义了具体进行事务管理的方法，这些方法才真正具有事务管理的属性，pointcut的范围应该包含method**
+
 
 
 ### 事务控制基于注解
@@ -1361,6 +1364,14 @@ protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws Se
         UserService userService = app.getBean(UserService.class);
         userService.save();
     }
+```
+
+```xml
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
+        <version>5.0.5.RELEASE</version>
+    </dependency>
 ```
 
 

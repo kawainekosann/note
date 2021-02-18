@@ -173,7 +173,7 @@ public class UserController {
     <context:component-scan base-package="com.kawainekosann">
         <!--不包括-->
         <!--<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>-->
-        <!--包括-->
+        <!--包括  就是器过滤器的作用 只扫描带@Controller注解的类-->
         <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
 
@@ -613,9 +613,58 @@ public class VO {
 2. 在配置文件中声明转换器
 3. 在`<annotation-driven>`中引用转换器
 
+```java
+import org.springframework.core.convert.converter.Converter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+public class DateConverter implements Converter<String, Date> {
+    //将日期字符串转换成日期对象，返回
+    public Date convert(String dateStr) {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = null;
+        try {
+            date = format.parse(dateStr);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return date;
+    }
+}
+```
+
+```xml
+    <!--mvc的注解驱动-->
+    <!--设置转化器-->
+    <mvc:annotation-driven conversion-service="conversionService"></mvc:annotation-driven>
+
+    <!--mvc开发资源的访问，/** 匹配目录及其子目录，这里是js目录不会被web.xml里配置的DispatcherServlet匹配到对应的映射中-->
+    <!--<mvc:resources mapping="/js/**" location="/js/"></mvc:resources>-->
+    <!--这里指mvc映射不到的地址交由原始容器（这里是tomcat）去寻找静态资源-->
+    <mvc:default-servlet-handler></mvc:default-servlet-handler>
+
+    <!--声明转换器,时间格式转化-->
+    <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
+        <property name="converters">
+            <list>
+                <bean class="com.kawainekosann.converter.DateConverter"></bean>
+            </list>
+        </property>
+    </bean>
+```
 
 
 
+#### 获取请求头的数据
+
+1. @RequestHeader
+
+   使用@RequestHeader可以获得请求头信息，相当于web阶段学习的`request.getHeader(name)`
+
+   `@RequestHeader`注解的属性如下：
+
+   * value：请求头的名称
+   * required：是否必须携带
 
 
 

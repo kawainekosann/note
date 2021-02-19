@@ -664,7 +664,347 @@ public class DateConverter implements Converter<String, Date> {
    `@RequestHeader`注解的属性如下：
 
    * value：请求头的名称
-   * required：是否必须携带
+   * required：是否必须携带 
+
+2. @CookieValue
+
+   使用@CookieValue可以获得知道Cookie的值
+
+   @CookieValue注解的属性如下：
+
+   * value：指定cookie的名称
+   * required：是否必须携带 
+
+```java
+    @RequestMapping("/quick20")
+    @ResponseBody //代表不进行页面跳转
+    //SpringMVC自动将注入User对应的属性
+    public void save20(@RequestHeader(value = "User-agent",required = false)  String user_agent){
+        System.out.println(user_agent);
+    }
+
+    @RequestMapping("/quick21")
+    @ResponseBody //代表不进行页面跳转
+    //SpringMVC自动将注入User对应的属性
+    public void save21(@CookieValue(value = "JSESSIONID",required = false)  String jsessionId){
+        System.out.println(jsessionId);
+    }
+```
+
+
+
+### 文件上传
+
+#### 文件上传三要素
+
+* 表单 type="file"
+* 表单提交方式为 post
+* 表单的 enctype属性是多部分表单形式 及enctype="multipart/fom-data"
+
+#### 文件上传原理
+
+* 当form表单修改为多部分表单时，request.getParamer()将失效。
+* enctype = "application/x-www-form-urlencoded" 时，form表单的正文内容格式是：**key=value&key=value...**
+* 当form表单的enctype 为 multipart/fom-data 时，请求正文内容就会变成多部分形式
+
+#### 单文件上传步骤
+
+* 导入fileupload 和 io坐标
+* 配置文件上传解析器
+* 编写文件上传代码
+
+```xml
+        <dependency>
+            <groupId>commons-fileupload</groupId>
+            <artifactId>commons-fileupload</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version>
+        </dependency>
+```
+
+```xml
+<!--配置文件上传解析器-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8"></property>
+        <property name="maxUploadSize" value="500000"></property>
+    </bean>
+```
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<form action="${pageContext.request.contextPath}/user/quick22" method="post" enctype="multipart/form-data">
+    名称<input type="text" name="userName"><br>
+    文件<input type="file" name="uploadFile"><br>
+    <input type="submit" value="提交">
+</form>
+
+</body>
+</html>
+```
+
+```java
+@RequestMapping("/quick22")
+    @ResponseBody
+    public void save22(String userName, MultipartFile uploadFile) throws IOException {
+        System.out.println(userName);
+        //获得上传文件的名称
+        String originalFilename = uploadFile.getOriginalFilename();
+        uploadFile.transferTo(new File("C:\\Users\\LIUQI\\Desktop\\test\\upload\\"+originalFilename));
+    }
+```
+
+
+
+#### 多文件上传实现
+
+```java
+@RequestMapping("/quick22")
+    @ResponseBody
+    public void save22(String userName, MultipartFile uploadFile,MultipartFile uploadFile2) throws IOException {
+        System.out.println(userName);
+        //获得上传文件的名称
+        String originalFilename = uploadFile.getOriginalFilename();
+        uploadFile.transferTo(new File("C:\\Users\\LIUQI\\Desktop\\test\\upload\\"+originalFilename));
+
+        String originalFilename2 = uploadFile2.getOriginalFilename();
+        uploadFile2.transferTo(new File("C:\\Users\\LIUQI\\Desktop\\test\\upload\\"+originalFilename2));
+    }
+
+//或者数组MultipartFile[] uploadFile
+```
+
+
+
+## SringMVC拦截器
+
+### 拦截器的作用
+
+SpringMVC的拦截器类似于Servlet开发中的过滤器Filter，用于对处理器进行<font color="red">预处理和后处理</font>
+
+将拦截器按一定顺序联结成一条链，这条链被称为<font color="red">拦截器链</font>，在访问被拦截的方法或者字段时，拦截器链会按之前定义的顺序被调用，拦截器也是AOP思想的具体实现
+
+### 拦截器和过滤器的区别
+
+| 区别     | 过滤器                                                    | 拦截器                                                       |
+| -------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| 使用范围 | 是servlet规范中的一部分，任何JAVA web工程都能使用         | 是SpringMVC框架自己的，只有使用了SpringMVC框架的工程才能用   |
+| 拦截范围 | 在url-pattern中配置了 /* 之后，可以对所有要访问的资源拦截 | 只会拦截访问的控制方法，如果访问的是jsp，html，css，image或js是不会进行拦截的 |
+
+#### 拦截器快速入门
+
+步骤：
+
+1. 创建拦截器类实现HandlerInterceptor接口
+2. 配置拦截器
+3. 测试拦截器拦截效果
+
+```java
+public class MyIntersepetor implements HandlerInterceptor {
+   //在目标方法执行之前执行
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("preHandle");
+        if(request.getParameter("param").equals("yes")){
+            return true;
+        }else{
+            request.getRequestDispatcher("/jsp/error.jsp").forward(request,response);
+         return false;
+        }
+    }
+
+    //在目标方法执行之后，视图返回之前执行
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        modelAndView.addObject("userName","dafeiao");
+        System.out.println("postHandle");//可以修改视图
+    }
+
+    //在整个流程都执行完毕后执行
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        System.out.println("afterCompletion");
+    }
+}
+```
+
+```java
+public class MyIntersepetor2 implements HandlerInterceptor {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("MyIntersepetor2 preHandle");
+        return true;
+    }
+
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        System.out.println("MyIntersepetor2 postHandle");
+    }
+
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        System.out.println("MyIntersepetor2 afterCompletion");
+    }
+}
+```
+
+```xml
+<!--配置拦截器-->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <!--对哪些资源执行拦截操作-->
+            <mvc:mapping path="/target"/>
+            <bean class="com.kawainekosann.interseptor.MyIntersepetor"/>
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <!--对哪些资源执行拦截操作-->
+            <mvc:mapping path="/target"/>
+            <bean class="com.kawainekosann.interseptor.MyIntersepetor2"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+```
+
+```java
+@RequestMapping("/target")
+    public ModelAndView save2(){
+        //Model模型：作用封装数据
+        //view视图：作用展示数据
+        System.out.println("目标资源执行");
+        ModelAndView modelAndView = new ModelAndView();
+        //设置模型数据
+        modelAndView.addObject("userName","kawainekosann");
+        //设置视图
+        modelAndView.setViewName("success");
+        return modelAndView;
+    }
+```
+
+preHandle
+MyIntersepetor2 preHandle
+目??源?行
+MyIntersepetor2 postHandle
+postHandle
+MyIntersepetor2 afterCompletion
+afterCompletion
+执行顺序和配置有关由外到里，然后由里到外
+
+#### 拦截器方法说明
+preHandle：方法执行之前执行，返回false时表示请求结束，true时调用下一个interseptor
+postHandle：方法执行之后，视图渲染之前执行，可以操作方法处理后的ModelAndView
+afterCompletion：在整个请求结束后，即视图渲染完后执行
+
+
+
+## SpringMVC异常处理
+
+### 异常处理的两种方式
+
+* 使用SpringMVC提供的简单异常处理器SimpleMappingExceptionResolver
+
+```xml
+    <!--配置异常处理器-->
+    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <!--内部资源视图解析器已经配置 前缀 后缀-->
+        <property name="defaultErrorView" value="error1"></property>
+        <!--先匹配下面的异常，匹配不到使用上面的默认的配置-->
+        <property name="exceptionMappings">
+            <map>
+                <entry key="java.lang.ArithmeticException" value="error2"></entry>
+            </map>
+        </property>
+    </bean>
+```
+
+* 使用Spring的异常处理接口HandlerExceptionResolver自定义自己的异常处理器
+
+  1. 创建异常处理器类实现HandlerExceptionResolver接口
+  2. 配置异常处理器
+  3. 编写异常页面
+  4. 进行异常跳转
+
+  ```java
+  public class MyResolver implements HandlerExceptionResolver {
+      public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+          ModelAndView modelAndView = new ModelAndView();
+          //返回值是ModelAndView，对应跳转错误视图的信息
+          if(ex instanceof MyException){
+              modelAndView.addObject("info","自定义的异常");
+              modelAndView.setViewName("error3");
+          }else if(ex instanceof ArithmeticException){
+              modelAndView.addObject("info","除数为0的异常");
+              modelAndView.setViewName("error2");
+          }
+          return modelAndView;
+      }
+  }
+  ```
+
+  ```java
+  public class MyException extends Exception{
+      //用详细信息指定一个异常
+      public MyException(String message){
+          super(message);
+      }
+  }
+  ```
+
+  ```java
+  public class TargetController {
+      @RequestMapping("/target")
+      public ModelAndView save2() throws MyException {
+          //Model模型：作用封装数据
+          //view视图：作用展示数据
+          System.out.println("目标资源执行");
+          //int i = 1/0;
+          MyException myException = new MyException("自定义异常");
+          if("asd".equals("asd")){
+              throw myException;
+          }
+          ModelAndView modelAndView = new ModelAndView();
+          //设置模型数据
+          modelAndView.addObject("userName","kawainekosann");
+          //设置视图
+          modelAndView.setViewName("success");
+          return modelAndView;
+      }
+  }
+  ```
+
+  ```html
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+      <title>Title</title>
+  </head>
+  <body>
+  <h1>error3  ${info}</h1>
+  </body>
+  </html>
+  ```
+
+```xml
+<!--自定义异常处理器,抛出异常后，SpringMVC会根据类型找对应处理，所以要配置(猜的)-->
+<bean class="com.kawainekosann.resolver.MyResolver"/>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

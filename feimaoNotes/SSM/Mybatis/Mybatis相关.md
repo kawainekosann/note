@@ -421,9 +421,46 @@ SqlSessionFactory有多个方法创建SqlSession实例，常用的方法有如�
 | ------------------------------- | ------------------------------------------------------------ |
 | openSession(boolean autoCommit) | 参数为是否自动提交，如果设置为true，那么不需要手动提交事务   |
 
-|
 
 
+### SqlSession会话对象
+
+SqlSession实例在Mybatis中是一个非常强大的类。在这里你会看到所有执行语句，提交或回滚事务和获取映射器实例的方法
+
+执行语句的方法主要有：
+
+`selectOne`,`selectList`,`insert`,`update`,`delete`
+
+```java
+    @Test
+    public void test5() throws IOException {
+        //获得核心配置文件
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        //获得session工厂对象
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
+        //获得会话对象
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        //执行操作 参数 namespace+id
+        User user = sqlSession.selectOne("userMapper.findById", 4);
+        System.out.println(user);
+        //释放资源
+        sqlSession.close();
+    }
+```
+
+
+
+操作事务的方法主要有：
+
+`commit`,`rollback`
+
+
+
+## Mybatis的DAO层实现
+
+### 传统开发方式
+
+传统UserDao接口
 
 
 

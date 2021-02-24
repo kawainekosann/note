@@ -462,6 +462,311 @@ SqlSession实例在Mybatis中是一个非常强大的类。在这里你会看到
 
 传统UserDao接口
 
+```xml
+    <dependencies>
+        <dependency>
+            <groupId>postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.1-901.jdbc4</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.23</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.4.6</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.12</version>
+        </dependency>
+    </dependencies>
+```
+
+```properties
+#jdbc.driver=com.mysql.jdbc.Driver
+#jdbc.url=jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=utf8
+#jdbc.username=root
+#jdbc.password=67iwxh1314
+
+jdbc.driver=org.postgresql.Driver
+jdbc.url=jdbc:postgresql://localhost:5432/test
+jdbc.username=postgres
+jdbc.password=postgres
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties"/>
+    <typeAliases>
+        <typeAlias type="com.kawainekosann.domain.User"/>
+    </typeAliases>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <!--数据源基本配置-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="com.kawainekosann.mapper\UserMapper.xml"></mapper>
+    </mappers>
+</configuration>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="userMapper">
+    <select id="findAll" resultType="user">
+        select * from public.user
+    </select>
+</mapper>
+```
+
+```java
+public class User{
+    private int id;
+    private String userName;
+    private String passWord;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPassWord() {
+        return passWord;
+    }
+
+    public void setPassWord(String passWord) {
+        this.passWord = passWord;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", userName='" + userName + '\'' +
+                ", passWord='" + passWord + '\'' +
+                '}';
+    }
+}
+```
+
+```java
+public class UserDaoImpl implements UserDao {
+    public List<User> findAll() throws IOException {
+        InputStream inputStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        List<User> userList= sqlSession.selectList("userMapper.findAll");
+        return userList;
+    }
+}
+```
+
+```java
+public class ServiceDemo {
+    public static void main(String[] args) throws IOException {
+        //创建dao层对象
+        UserDao userDao = new UserDaoImpl();
+        List<User> userList = userDao.findAll();
+        System.out.println(userList);
+    }
+}
+```
+
+### 代理开发方式介绍
+
+采用Mybatis的代理开发方式实现了DAO层的开发，这种方式是我们后面进入企业的主流。
+
+Mapper接口开发方法只需要编写Mapper接口（相当于Dao接口），由Mybatis框架根据接口定义创建接口的动态代理对象，代理对象的方法同Dao接口的实现类方法。
+
+Mapper接口开发需要遵循以下规范：
+
+1. Mapper.xml文件中的namespace与mapper接口的全限定名相同。
+2. Mapper接口方法名和Mapper.xml中定义的每个statement的id相同
+3. Mapper接口方法的输入参数类型和mapper.xml中定义的每个sql的parameterType的类型相同
+4. Mapper接口方法的输出参数类型和mapper.xml中定义的每个sql的resultType的类型相同
+
+mapper接口：
+
+```java
+public interface UserDao {
+    public List<User> findAll() throws IOException;
+}
+```
+
+mapper.xml：
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--1.Mapper.xml文件中的namespace与mapper接口的全限定名相同。-->
+<mapper namespace="com.kawainekosann.dao.UserDao">
+    <!--Mapper接口方法名和Mapper.xml中定义的每个statement的id相同-->
+    <!--Mapper接口方法的输出参数类型和mapper.xml中定义的每个sql的resultType的类型相同-->
+    <select id="findAll" resultType="user">
+        select * from public.user
+    </select>
+</mapper>
+```
+
+```java
+public class ServiceDemo {
+    public static void main(String[] args) throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        UserDao mapper = sqlSession.getMapper(UserDao.class);
+
+        List<User> users = mapper.findAll();
+        System.out.println(users);
+
+        User user = mapper.findById(2);
+        System.out.println(user);
+    }
+}
+```
+
+
+
+## Mybatis映射文件深入
+
+### 动态sql语句概述
+
+Mybatis的映射文件中，前面我们的sql都是比较简单的，有时候业务逻辑复杂时，我们SQL是动态变化的
+
+### `<if>`
+
+```xml
+<mapper namespace="com.kawainekosann.mapper.UserMapper">
+    <!--Mapper接口方法名和Mapper.xml中定义的每个statement的id相同-->
+    <!--Mapper接口方法的输出参数类型和mapper.xml中定义的每个sql的resultType的类型相同-->
+    <!--Mapper接口方法的输入参数类型和mapper.xml中定义的每个sql的parameterType的类型相同-->
+    <select id="findByCondition" resultType="user" parameterType="user">
+        select * from public.user
+        <where>
+            <if test="id!=0">
+                and id = #{id}
+            </if>
+            <if test="userName!=null">
+                and "userName"=#{userName}
+            </if>
+        </where>
+    </select>
+</mapper>
+<!--where标签，根据你传递的动态条件去决定添加不添加-->
+```
+
+### `<foreach>`
+
+```xml
+<!--select * from public.user where id=1 or id=2-->
+<!--select * from public.user where id in (1,2)-->
+    <!--foreach collection list是集合 array传数组
+    open:sql以什么为开始 close:sql以什么为结束 item：集合里的每一项
+    separator：以什么符号为分隔符-->
+    <select id="findByIds" parameterType="list" resultType="user">
+        select * from public.user
+        <where>
+        <foreach collection="list" open="id in(" close=")" item="id" separator=",">
+            #{id}
+        </foreach>
+        </where>
+    </select>
+```
+
+
+
+### sql语句抽取
+
+```xml
+<mapper namespace="com.kawainekosann.mapper.UserMapper">
+    <!--sql语句的抽取-->
+    <sql id="selectUser">select * from public.user</sql>
+
+    <!--Mapper接口方法名和Mapper.xml中定义的每个statement的id相同-->
+    <!--Mapper接口方法的输出参数类型和mapper.xml中定义的每个sql的resultType的类型相同-->
+    <!--Mapper接口方法的输入参数类型和mapper.xml中定义的每个sql的parameterType的类型相同-->
+    <select id="findByCondition" resultType="user" parameterType="user">
+        <include refid="selectUser"></include>
+        <where>
+            <if test="id!=0">
+                and id = #{id}
+            </if>
+            <if test="userName!=null">
+                and "userName"=#{userName}
+            </if>
+        </where>
+    </select>
+    <!--foreach collection list是集合 array传数组
+    open:sql以什么为开始 close:sql以什么为结束 item：集合里的每一项
+    separator：以什么符号为分隔符-->
+    <select id="findByIds" parameterType="list" resultType="user">
+        <include refid="selectUser"></include>
+        <where>
+            <foreach collection="list" open="id in(" close=")" item="id" separator=",">
+                #{id}
+            </foreach>
+        </where>
+    </select>
+</mapper>
+```
+
+
+
+## Mybatis核心配置文件深入
+
+### typeHandlers标签
+
+typeHandlers又叫类型处理器，无论是mybatis在预处理语句（PreparedStatement）中设置一个参数时，还是从结果集中取出一个值时，都会用类型处理器将获取的值以合适的方式转换成Java类型，在MyBatis中使用typeHandler来实现。所以说白了，typeHandlers就是用来完成javaType和jdbc Type之间的转换
+
+#### 开发步骤：
+
+1. 定义转换类继承`BaseTypeHandler<T>`
+2. 覆盖4个实现方法，其中`setNonNullParameter`为`java程序设置数据到数据库的回调方法，getNullableResult为查询时mysql的字符串类型转换成java的Type类型的方法
+3. 在mybatis核心配置文件中进行注册
+4. 测试是否转换正确
+
+
+
+
+
 
 
 

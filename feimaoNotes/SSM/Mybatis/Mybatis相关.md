@@ -759,9 +759,100 @@ typeHandlers又叫类型处理器，无论是mybatis在预处理语句（Prepare
 #### 开发步骤：
 
 1. 定义转换类继承`BaseTypeHandler<T>`
-2. 覆盖4个实现方法，其中`setNonNullParameter`为`java程序设置数据到数据库的回调方法，getNullableResult为查询时mysql的字符串类型转换成java的Type类型的方法
+2. 覆盖4个实现方法，其中`setNonNullParameter`为java程序设置数据到数据库的回调方法，getNullableResult为查询时mysql的字符串类型转换成java的Type类型的方法
 3. 在mybatis核心配置文件中进行注册
 4. 测试是否转换正确
+
+```java
+public class DateTypeHandler extends BaseTypeHandler<Date> {
+    //将Java类型转换成数据库需要的类型
+    public void setNonNullParameter(PreparedStatement ps, int i, Date parameter, JdbcType jdbcType) throws SQLException {
+        long time = parameter.getTime();
+        ps.setLong(i,time);
+    }
+
+    //将数据库中的类型转换成Java类型
+    //columnName为数据库字段名称
+    //ResultSet查询结果集
+    public Date getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        //获得结果集中的数据(long)转换成Date类型
+        long aLong = rs.getLong(columnName);
+        Date date = new Date(aLong);
+        return date;
+    }
+
+    //将数据库中的类型转换成Java类型
+    public Date getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        //获得结果集中的数据(long)转换成Date类型
+        long aLong = rs.getLong(columnIndex);
+        Date date = new Date(aLong);
+        return date;
+    }
+
+    //将数据库中的类型转换成Java类型
+    public Date getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        long aLong = cs.getLong(columnIndex);
+        Date date = new Date(aLong);
+        return date;
+    }
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties"/>
+    <typeAliases>
+        <typeAlias type="com.kawainekosann.domain.User" alias="user"/>
+    </typeAliases>
+
+    <!--注册自定义类型处理器-->
+    <typeHandlers>
+        <typeHandler handler="com.kawainekosann.handler.DateTypeHandler"></typeHandler>
+    </typeHandlers>
+
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <!--数据源基本配置-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="com.kawainekosann.mapper\UserMapper.xml"></mapper>
+        <mapper resource="com.kawainekosann.mapper\UserMapperNew.xml"/>
+    </mappers>
+</configuration>
+```
+
+```java
+@Test
+    public void test1() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        /*User user = new User();
+        user.setId(3);
+        user.setUserName("liuqi3");
+        user.setPassWord("3liuqi");
+        user.setBirthday(new Date());
+        mapper.save(user);
+        sqlSession.commit();*/
+        
+        User userCondition = new User();
+        userCondition.setId(3);
+        List<User> userList = mapper.findByCondition(userCondition);
+        System.out.println(userList);
+    }
+```
 
 
 

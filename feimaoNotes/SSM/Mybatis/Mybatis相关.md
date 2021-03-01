@@ -860,15 +860,406 @@ public class DateTypeHandler extends BaseTypeHandler<Date> {
 
 
 
+### 知识小结
+
+Mybatis核心配置文件常用标签：
+
+1. `properties`标签：用于加载外部properties文件
+2. `typeAlias`标签：设置类型别名
+3. `environment`标签：数据源环境配置标签
+4. `typeHandler`标签：配置自定义类型处理器
+5. `plugins`标签：配置Mybatis插件
+
+
+
+## Mybatis的多表操作
+
+### 一对一查询：
+
+用户表和订单表的关系为：一个用户有多个订单，一个订单只属于一个用户
+一对一查询需求：查询一个订单，同时查询该订单所属用户。
+
+```java
+public class Orders {
+    private int id;
+    private Date ordertimes;
+    private double total;
+    //表示当前订单属于哪个用户
+    private User user;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Date getOrdertimes() {
+        return ordertimes;
+    }
+
+    public void setOrdertimes(Date ordertimes) {
+        this.ordertimes = ordertimes;
+    }
+
+    public double getTotal() {
+        return total;
+    }
+
+    public void setTotal(double total) {
+        this.total = total;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public String toString() {
+        return "Orders{" +
+                "id=" + id +
+                ", ordertimes=" + ordertimes +
+                ", total=" + total +
+                ", user=" + user +
+                '}';
+    }
+}
+```
+
+```java
+public class User {
+    private int id;
+    private String userName;
+    private String passWord;
+    private Date birthday;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPassWord() {
+        return passWord;
+    }
+
+    public void setPassWord(String passWord) {
+        this.passWord = passWord;
+    }
+
+    public Date getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(Date birthday) {
+        this.birthday = birthday;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", userName='" + userName + '\'' +
+                ", passWord='" + passWord + '\'' +
+                ", birthday=" + birthday +
+                '}';
+    }
+
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties"/>
+    <typeAliases>
+        <typeAlias type="com.kawainekosann.domain.User" alias="user"/>
+        <typeAlias type="com.kawainekosann.domain.Orders" alias="order"/>
+    </typeAliases>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <!--数据源基本配置-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="com.kawainekosann.mapper\UserMapper.xml"/>
+        <mapper resource="com.kawainekosann.mapper\OrderMapper.xml"/>
+    </mappers>
+</configuration>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--1.Mapper.xml文件中的namespace与mapper接口的全限定名相同。-->
+<mapper namespace="com.kawainekosann.mapper.OrderMapper">
+    <!--此处 order为sqlMapConfig 定义的别名-->
+    <resultMap id="orderMap" type="order">
+        <!--手动指定字段和实体熟悉的关系-->
+        <!--主键有个单独标签
+        column：字段名称
+        property:实体属性名称
+        -->
+        <id column="oid" property="id"></id>
+        <result column="ordertimes" property="ordertimes"></result>
+        <result column="total" property="total"></result>
+       <!-- <result column="uid" property="user.id"></result>
+        <result column="userName" property="user.userName"></result>
+        <result column="passWord" property="user.passWord"></result>
+        <result column="birthday" property="user.birthday"></result>-->
+        <!--匹配
+        property:当前实体的属性名称
+        javaType：当前属性的类型
+        -->
+        <association property="user" javaType="user">
+            <id column="uid" property="id"></id>
+            <result column="userName" property="userName"></result>
+            <result column="passWord" property="passWord"></result>
+            <result column="birthday" property="birthday"></result>
+        </association>
+    </resultMap>
+
+    <select id="findAll" resultMap="orderMap">
+     SELECT *,o."id" oid FROM orders o ,"user" u where o."id"=u."id"
+    </select>
+</mapper>
+```
+
+```java
+    @Test
+    public void test1() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        OrderMapper mapper = sqlSession.getMapper(OrderMapper.class);
+        List<Orders> ordersList = mapper.findAll();
+        System.out.println(ordersList);
+    }
+```
 
 
 
 
 
+### 一对多查询：
 
+用户表和订单表的关系为：一个用户有多个订单，一个订单只属于一个用户
+一对多的需求：查询一个用户，同时查询出该用户具有的所有的订单
 
+```java
+public class User {
+    private int id;
+    private String userName;
+    private String passWord;
+    private Date birthday;
+    //描述当前用户存在哪些订单
+    private List<Orders> ordersList;
 
+    public int getId() {
+        return id;
+    }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPassWord() {
+        return passWord;
+    }
+
+    public void setPassWord(String passWord) {
+        this.passWord = passWord;
+    }
+
+    public Date getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(Date birthday) {
+        this.birthday = birthday;
+    }
+
+    public List<Orders> getOrdersList() {
+        return ordersList;
+    }
+
+    public void setOrdersList(List<Orders> ordersList) {
+        this.ordersList = ordersList;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", userName='" + userName + '\'' +
+                ", passWord='" + passWord + '\'' +
+                ", birthday=" + birthday +
+                ", ordersList=" + ordersList +
+                '}';
+    }
+}
+```
+
+```java
+public class Orders {
+    private int id;
+    private Date ordertimes;
+    private double total;
+    //表示当前订单属于哪个用户
+    private User user;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Date getOrdertimes() {
+        return ordertimes;
+    }
+
+    public void setOrdertimes(Date ordertimes) {
+        this.ordertimes = ordertimes;
+    }
+
+    public double getTotal() {
+        return total;
+    }
+
+    public void setTotal(double total) {
+        this.total = total;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public String toString() {
+        return "Orders{" +
+                "id=" + id +
+                ", ordertimes=" + ordertimes +
+                ", total=" + total +
+                ", user=" + user +
+                '}';
+    }
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties"/>
+    <typeAliases>
+        <typeAlias type="com.kawainekosann.domain.User" alias="user"/>
+        <typeAlias type="com.kawainekosann.domain.Orders" alias="order"/>
+    </typeAliases>
+
+    <typeHandlers>
+        <typeHandler handler="com.kawainekosann.handler.DateTypeHandler"></typeHandler>
+    </typeHandlers>
+
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <!--数据源基本配置-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="com.kawainekosann.mapper\UserMapper.xml"/>
+        <mapper resource="com.kawainekosann.mapper\OrderMapper.xml"/>
+    </mappers>
+</configuration>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--1.Mapper.xml文件中的namespace与mapper接口的全限定名相同。-->
+
+<mapper namespace="com.kawainekosann.mapper.UserMapper">
+    <resultMap id="userMap" type="user">
+        <id column="uid" property="id"></id>
+        <result column="userName" property="userName"></result>
+        <result column="passWord" property="passWord"></result>
+        <result column="birthday" property="birthday"></result>
+        <!--配置集合
+        property:当前实体的属性名称
+        javaType：当前属性的类型
+        -->
+        <collection property="ordersList" javaType="order">
+            <id column="oid" property="id"></id>
+            <result column="total" property="total"></result>
+            <result column="ordertimes" property="ordertimes"></result>
+        </collection>
+    </resultMap>
+    <select id="findAll" resultMap="userMap">
+        select *,o.id oid from public.user u,orders o where u."id" = o.uid
+    </select>
+</mapper>
+```
+
+```java
+    @Test
+    public void test2() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        List<User> userList = mapper.findAll();
+        System.out.println(userList);
+    }
+```
 
 
 

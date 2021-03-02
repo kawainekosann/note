@@ -856,7 +856,65 @@ public class DateTypeHandler extends BaseTypeHandler<Date> {
 
 
 
+### `plugins`标签
 
+mybatis可以使用第三方的插件来对功能进行扩展，分页助手PageHelper是将复杂的分页操作进行封装，使用简单的方式即可获得分页的相关数据：
+
+#### 开发步骤：
+
+1. 导入PageHelper的坐标
+2. 在Mybatis核心配置文件中配置PageHelpler插件
+3. 测试分页数据获取
+
+```xml
+        <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>pagehelper</artifactId>
+            <version>4.1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>1.4</version>
+        </dependency>
+```
+
+```xml
+    <!--配置分页助手插件
+    <property name="dialect" value="postgresql"/>
+    -->
+    <plugins>
+        <plugin interceptor="com.github.pagehelper.PageHelper">
+            <property name="dialect" value="mysql"/>
+        </plugin>
+    </plugins>
+```
+
+```Java
+    @Test
+    public void test2() throws IOException {
+        InputStream sqlMapConfig = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSessionFactory sqlSession = new SqlSessionFactoryBuilder().build(sqlMapConfig);
+        SqlSession sqlSession1 = sqlSession.openSession();
+        UserMapper mapper = sqlSession1.getMapper(UserMapper.class);
+
+        //设置分页的相关参数 当前页+每页显示的条书
+        PageHelper.startPage(1,2);
+        List<User> userList = mapper.findAll();
+        //获得与分页相关参数
+        PageInfo<User> pageInfo = new PageInfo<User>(userList);
+        logger.info("当前页数"+pageInfo.getPageNum());
+        logger.info("页面条数"+pageInfo.getPageSize());
+        logger.info("总条数"+pageInfo.getTotal());
+        logger.info("总页数"+pageInfo.getPages());
+        logger.info("上一数"+pageInfo.getPrePage());
+        logger.info("下一数"+pageInfo.getNextPage());
+        logger.info("是否第一页"+pageInfo.isIsFirstPage());
+        logger.info("是否最后一页"+pageInfo.isIsLastPage());
+
+        System.out.println(userList);
+    }
+```
 
 
 
@@ -869,6 +927,7 @@ Mybatis核心配置文件常用标签：
 3. `environment`标签：数据源环境配置标签
 4. `typeHandler`标签：配置自定义类型处理器
 5. `plugins`标签：配置Mybatis插件
+
 
 
 

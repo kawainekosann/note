@@ -1295,9 +1295,10 @@ public class Orders {
         <result column="birthday" property="birthday"></result>
         <!--配置集合
         property:当前实体的属性名称
-        javaType：当前属性的类型
+        javaType:这里是集合
+        ofType：当前属性的类型
         -->
-        <collection property="ordersList" javaType="order">
+        <collection property="ordersList" javaType="java.util.ArrayList" ofType="order">
             <id column="oid" property="id"></id>
             <result column="total" property="total"></result>
             <result column="ordertimes" property="ordertimes"></result>
@@ -1319,6 +1320,543 @@ public class Orders {
         System.out.println(userList);
     }
 ```
+
+
+
+### 多对多查询：
+
+用户表和角色表关系为，一个用户有多个角色，一个角色被多个用户使用；  
+多对多的查询需求，查询用户同时查询出该用户的所有角色
+
+```java
+public class User {
+    private int id;
+    private String userName;
+    private String passWord;
+    private Date birthday;
+    //描述当前用户存在哪些订单
+    private List<Orders> ordersList;
+    private  List<Message> messages;
+    //描述当前用户有哪些角色
+    private List<Role> roleList;
+
+    public List<Role> getRoleList() {
+        return roleList;
+    }
+
+    public void setRoleList(List<Role> roleList) {
+        this.roleList = roleList;
+    }
+
+    public List<Message> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPassWord() {
+        return passWord;
+    }
+
+    public void setPassWord(String passWord) {
+        this.passWord = passWord;
+    }
+
+    public Date getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(Date birthday) {
+        this.birthday = birthday;
+    }
+
+    public List<Orders> getOrdersList() {
+        return ordersList;
+    }
+
+    public void setOrdersList(List<Orders> ordersList) {
+        this.ordersList = ordersList;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", userName='" + userName + '\'' +
+                ", passWord='" + passWord + '\'' +
+                ", birthday=" + birthday +
+                ", ordersList=" + ordersList +
+                ", messages=" + messages +
+                ", roleList=" + roleList +
+                '}';
+    }
+}
+```
+
+```java
+public class Role {
+    private int id;
+    private String rolename;
+    private String roledesc;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getRolename() {
+        return rolename;
+    }
+
+    public void setRolename(String rolename) {
+        this.rolename = rolename;
+    }
+
+    public String getRoledesc() {
+        return roledesc;
+    }
+
+    public void setRoledesc(String roledesc) {
+        this.roledesc = roledesc;
+    }
+
+    @Override
+    public String toString() {
+        return "Role{" +
+                "id=" + id +
+                ", rolename='" + rolename + '\'' +
+                ", roledesc='" + roledesc + '\'' +
+                '}';
+    }
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties"/>
+    <typeAliases>
+        <typeAlias type="com.kawainekosann.domain.User" alias="user"/>
+        <typeAlias type="com.kawainekosann.domain.Orders" alias="order"/>
+        <typeAlias type="com.kawainekosann.domain.Message" alias="message"/>
+        <typeAlias type="com.kawainekosann.domain.Role" alias="role"/>
+    </typeAliases>
+
+    <typeHandlers>
+        <typeHandler handler="com.kawainekosann.handler.DateTypeHandler"></typeHandler>
+    </typeHandlers>
+
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <!--数据源基本配置-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+        <mapper resource="com.kawainekosann.mapper\UserMapper.xml"/>
+        <mapper resource="com.kawainekosann.mapper\OrderMapper.xml"/>
+    </mappers>
+</configuration>
+```
+
+```xml
+<resultMap id="userRoleMap" type="user">
+        <id column="userid" property="id"></id>
+        <result column="userName" property="userName"></result>
+        <result column="passWord" property="passWord"></result>
+        <result column="birthday" property="birthday"></result>
+        <collection property="roleList" ofType="role">
+            <id column="roleid" property="id"></id>
+            <result column="rolename" property="rolename"></result>
+            <result column="roledesc" property="roledesc"/>
+        </collection>
+    </resultMap>
+    <select id="findUserAndRole" resultMap="userRoleMap">
+        SELECT * FROM "user" u,sys_user_role ur, sys_role r WHERE u.id=ur.userid and ur.roleid = r."id"
+    </select>
+```
+
+```java
+@Test
+    public void test3() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        List<User> userList = mapper.findUserAndRole();
+        System.out.println(userList);
+    }
+```
+
+
+
+## Mybatis注解开发
+
+@Insert：实现新增
+
+@Update：实现更新
+
+@Delete：实现删除
+
+@Select：实现查询
+
+@Result：实现结果集封装
+
+@Results：可以与@Result一起使用，封装多个结果集
+
+@One：实现一对一结果集封装
+
+@Many：实现一对多结果集封装
+
+### 简单查询
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties"/>
+    <typeAliases>
+        <typeAlias type="com.kawainekosann.domain.User" alias="user"/>
+        <typeAlias type="com.kawainekosann.domain.Orders" alias="order"/>
+        <typeAlias type="com.kawainekosann.domain.Message" alias="message"/>
+        <typeAlias type="com.kawainekosann.domain.Role" alias="role"/>
+    </typeAliases>
+
+    <typeHandlers>
+        <typeHandler handler="com.kawainekosann.handler.DateTypeHandler"></typeHandler>
+    </typeHandlers>
+
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <!--数据源基本配置-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+<!--    <mappers>
+        <mapper resource="com.kawainekosann.mapper\UserMapper.xml"/>
+        <mapper resource="com.kawainekosann.mapper\OrderMapper.xml"/>
+    </mappers>-->
+
+    <!--加载映射关系 TODO  -->
+    <mappers>
+        <!--指定接口所在的包-->
+        <package name="com.kawainekosann.mapper"/>
+    </mappers>
+
+</configuration>
+```
+
+```java
+public interface UserMapper{
+    //public List<User> findAll();
+    public List<User> findAllMsg();
+    public List<User> findUserAndRole();
+
+    @Insert("insert into public.user values (#{id},#{userName},#{passWord},#{birthday})")
+    public void save(User user);
+
+    @Update("update public.user set \"userName\"=#{userName},\"passWord\"=#{passWord},birthday=#{birthday} where id = #{id}")
+    public void update(User user);
+
+    @Delete("delete from public.user where id=#{id}")
+    public void delete(int id);
+
+    @Select("select * from public.user where id=#{id}")
+    public User select(int id);
+
+    @Select("select * from public.user")
+    public List<User> findAll();
+
+}
+```
+
+```java
+    private UserMapper mapper;
+    private SqlSession sqlSession;
+    @Before
+    public void init() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        mapper = sqlSession.getMapper(UserMapper.class);
+    }
+
+    @Test
+    public void test4() {
+        User select = mapper.select(1);
+        System.out.println(select);
+    }
+
+    @Test
+    public void test5() throws IOException {
+        User user = new User();
+        user.setId(4);
+        user.setUserName("liuqi4");
+        user.setPassWord("4liuqi");
+        user.setBirthday(new Date());
+        mapper.update(user);
+        sqlSession.commit();
+    }
+
+    @Test
+    public void test6() throws IOException {
+        User user = new User();
+        user.setId(5);
+        user.setUserName("liuqi5");
+        user.setPassWord("5liuqi");
+        user.setBirthday(new Date());
+        mapper.save(user);
+        sqlSession.commit();
+    }
+
+    @Test
+    public void test7() {
+        List<User> userList = mapper.findAll();
+        System.out.println(userList);
+    }
+
+    @Test
+    public void test8() {
+        mapper.delete(5);
+        sqlSession.commit();
+    }
+```
+
+
+
+### Mybatis注解实现复杂映射开发
+
+实现复杂映射之前我们可以在映射文件中通过配置`<resultMap>`来实现，使用注解开发后，我们可以使用@Results注解，@Result注解，@One注解，@Many注解组合完成复杂关系的配置
+
+| 注解          | 说明                                                         |
+| ------------- | ------------------------------------------------------------ |
+| @Results      | 代替的是标签`<resultMap>`该注解中可以使用当@Result注解，也可以使用@Result集合，使用格式：@Results({@Result(),@Result()}) 或 @Results(@Result()) |
+| @Result       | 代替了`<id>`标签和`<result>`标签<br />@Result中属性介绍：<br /> column：数据库列名<br /> property：需要装配的属性名<br /> one：需要使用的@One注解(@Result(one=@One)())<br /> many：需要使用的@Many注解(@Result(many=@Many)()) |
+| @One(一对一)  | 代替了`<association>`标签，是多表查询的关键，在注解中用来指定子查询返回单一对象<br /> @One注解属性介绍<br /> select：指定用来多表查询的sqlmapper<br /> 使用格式：@Result(column="",property="",one=@One(select="")) |
+| @Many(多对一) | 代替了`<collection>`标签，是多表查询的关键，在注解中用来指定子查询返回对象集合<br /> 使用格式：@Result(property="",column="",many=@Many(select="")) |
+
+#### 方式一：
+
+```java
+public interface OrderMapper {
+    @Select("SELECT *,o.\"id\" oid FROM orders o ,\"user\" u where o.\"id\"=u.\"id\"")
+    @Results({
+            @Result(column = "oid", property = "id"),
+            @Result(column = "ordertimes", property = "ordertimes"),
+            @Result(column = "total", property = "total"),
+            @Result(column = "uid", property = "user.id"),
+            @Result(column = "userName", property = "user.userName"),
+            @Result(column = "passWord", property = "user.passWord"),
+            @Result(column = "birthday", property = "user.birthday"),
+    })
+    public List<Orders> findAll();
+}
+```
+
+```java
+@Test
+    public void test9() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        OrderMapper mapper = sqlSession.getMapper(OrderMapper.class);
+        List<Orders> ordersList = mapper.findAll();
+        System.out.println(ordersList);
+    }
+```
+
+```xml
+    <!--加载映射关系 TODO  -->
+    <mappers>
+        <!--指定接口所在的包-->
+        <package name="com.kawainekosann.mapper"/>
+    </mappers>
+```
+
+
+
+#### 方式二：
+
+```java
+public interface OrderMapper {
+    @Select("SELECT * FROM orders")
+    @Results({
+            @Result(column = "id", property = "id"),
+            @Result(column = "ordertimes", property = "ordertimes"),
+            @Result(column = "total", property = "total"),
+            @Result(
+                    property = "user",//要封装的属性名称
+                    column = "uid",//根据哪个字段查询user
+                    javaType = User.class,//要封装的实体类型
+                    //select属性表示查询哪个接口的方法获得对应属性
+                    one = @One(select = "com.kawainekosann.mapper.UserMapper.select")
+            )
+
+    })
+    public List<Orders> findAll();
+}
+```
+
+```java
+public interface UserMapper{
+    @Insert("insert into public.user values (#{id},#{userName},#{passWord},#{birthday})")
+    public void save(User user);
+
+    @Update("update public.user set \"userName\"=#{userName},\"passWord\"=#{passWord},birthday=#{birthday} where id = #{id}")
+    public void update(User user);
+
+    @Delete("delete from public.user where id=#{id}")
+    public void delete(int id);
+
+    @Select("select * from public.user where id=#{id}")
+    public User select(int id);
+
+    @Select("select * from public.user")
+    public List<User> findAll();
+}
+```
+```java
+@Test
+    public void test9() throws IOException {
+        InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
+        SqlSession sqlSession = new SqlSessionFactoryBuilder().build(resourceAsStream).openSession();
+        OrderMapper mapper = sqlSession.getMapper(OrderMapper.class);
+        List<Orders> ordersList = mapper.findAll();
+        System.out.println(ordersList);
+    }
+```
+
+```xml
+    <!--加载映射关系 TODO  -->
+    <mappers>
+        <!--指定接口所在的包-->
+        <package name="com.kawainekosann.mapper"/>
+    </mappers>
+```
+
+
+
+### 一对多查询：
+
+```java
+    @Select("select * from public.user")
+    @Results({
+            //id = true可以将该字段看作主键
+            @Result(id = true ,column = "id" , property = "id"),
+            @Result(column = "userName" , property = "userName"),
+            @Result(column = "passWord" , property = "userName"),
+            @Result(
+                    property = "ordersList",
+                    column = "id",
+                    javaType = List.class,
+                    many = @Many( select = "com.kawainekosann.mapper.OrderMapper.findById")
+            )}
+    )
+    public List<User> findUserAndOrders();
+```
+
+```java
+@Select("select * from orders where uid = #{uid}")
+public List<Orders> findById(int uid);
+```
+
+```java
+    @Test
+    public void test10() throws IOException {
+        List<User> userList = mapper.findUserAndOrders();
+        System.out.println(userList);
+        sqlSession.close();
+    }
+```
+
+
+
+### 多对多查询：
+
+```java
+    @Select("select * from public.user")
+    @Results({
+            //id = true可以将该字段看作主键
+            @Result(id = true ,column = "id" , property = "id"),
+            @Result(column = "userName" , property = "userName"),
+            @Result(column = "passWord" , property = "userName"),
+            @Result(
+                    property = "roleList",
+                    column = "id",
+                    javaType = List.class,
+                    many = @Many( select = "com.kawainekosann.mapper.RoleMapper.findByUid")
+            )}
+    )
+    public List<User> findUserAndRole();
+```
+
+```java
+public interface RoleMapper {
+    @Select("SELECT * FROM sys_user_role ur, sys_role r WHERE ur.userid=#{id} and ur.roleid = r.\"id\" ")
+    public List<Role> findByUid(int uid);
+}
+```
+
+```java
+@Test
+    public void test11() throws IOException {
+        List<User> userList = mapper.findUserAndRole();
+        System.out.println(userList);
+        sqlSession.close();
+    }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

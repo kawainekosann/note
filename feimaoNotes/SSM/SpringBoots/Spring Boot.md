@@ -403,6 +403,7 @@ server:
 friends:
 		lastName: zhangsan
 		age: 20
+ maps: {k1: v1,k2: 12}
 ```
 
 行内写法：
